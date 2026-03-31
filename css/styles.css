@@ -169,6 +169,10 @@ button { cursor: pointer; font-family: var(--font-sans); border: none; backgroun
 }
 .cart-btn:hover .cart-badge { background: var(--white); color: var(--black); }
 
+@media (max-width: 480px) {
+  .cart-label { display: none; }
+}
+
 /* Hamburger (mobile) */
 .hamburger {
   display: none;
