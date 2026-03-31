@@ -213,7 +213,6 @@ button { cursor: pointer; font-family: var(--font-sans); border: none; backgroun
    ============================================================ */
 .hero {
   position: relative;
-  min-height: 560px;
   display: flex;
   align-items: center;
   overflow: hidden;
@@ -243,10 +242,9 @@ button { cursor: pointer; font-family: var(--font-sans); border: none; backgroun
   z-index: 2;
   display: grid;
   grid-template-columns: 1fr 1fr;
-  align-items: center;
+  align-items: stretch;
   gap: 48px;
   width: 100%;
-  min-height: 560px;
 }
 
 .hero-content {
@@ -295,7 +293,7 @@ button { cursor: pointer; font-family: var(--font-sans); border: none; backgroun
 /* Hero image panel */
 .hero-image-panel {
   position: relative;
-  height: 560px;
+  min-height: 560px;
   overflow: hidden;
 }
 
