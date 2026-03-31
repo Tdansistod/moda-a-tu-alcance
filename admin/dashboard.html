@@ -433,6 +433,68 @@
     }
     .img-upload-placeholder .upload-icon { font-size: 28px; }
 
+    /* ── Hamburger ── */
+    .admin-hamburger {
+      display: none;
+      flex-direction: column;
+      justify-content: center;
+      gap: 5px;
+      width: 36px; height: 36px;
+      background: none;
+      border: none;
+      cursor: pointer;
+      padding: 4px;
+    }
+    .admin-hamburger span {
+      display: block;
+      width: 22px; height: 2px;
+      background: rgba(255,255,255,0.85);
+      border-radius: 2px;
+      transition: all 0.25s;
+    }
+    .admin-hamburger.open span:nth-child(1) { transform: translateY(7px) rotate(45deg); }
+    .admin-hamburger.open span:nth-child(2) { opacity: 0; }
+    .admin-hamburger.open span:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
+
+    /* ── Mobile nav ── */
+    .mobile-nav {
+      display: none;
+      position: fixed;
+      top: 60px; left: 0; right: 0;
+      background: var(--white);
+      z-index: 99;
+      border-bottom: 1px solid #e0e0e6;
+      box-shadow: 0 6px 24px rgba(0,0,0,0.12);
+      padding: 8px 0 12px;
+    }
+    .mobile-nav.open { display: block; }
+    .mobile-nav-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      top: 60px;
+      background: rgba(0,0,0,0.3);
+      z-index: 98;
+    }
+    .mobile-nav-overlay.open { display: block; }
+    .mobile-nav .mobile-nav-section {
+      font-size: 9px;
+      font-weight: 700;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: #aaa;
+      padding: 10px 20px 4px;
+    }
+    .mobile-nav .sidebar-link {
+      width: 100%;
+      border-left: none;
+      padding: 13px 20px;
+      font-size: 14px;
+    }
+
+    /* ── Table scroll wrapper ── */
+    .table-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+
     /* Responsive */
     @media (max-width: 1024px) {
       .stats-grid { grid-template-columns: repeat(2, 1fr); }
@@ -442,7 +504,8 @@
       .admin-sidebar { display: none; }
       .admin-main { padding: 16px; }
       .stats-grid { grid-template-columns: repeat(2, 1fr); }
-      .data-table { display: block; overflow-x: auto; }
+      .admin-hamburger { display: flex; }
+      .search-input { min-width: 0; width: 100%; }
     }
   </style>
 </head>
@@ -451,14 +514,40 @@
   <!-- ── Admin Header ── -->
   <header class="admin-header">
     <div class="admin-header-left">
+      <button class="admin-hamburger" id="mobile-menu-btn" onclick="toggleMobileMenu()" aria-label="Menú">
+        <span></span><span></span><span></span>
+      </button>
       <img src="https://pztftznwvrsoipiuhwof.supabase.co/storage/v1/object/public/assets/logo/logo-dark.jpg" alt="Emma" class="admin-logo"/>
-      <span class="admin-badge">Admin</span>
     </div>
     <div class="admin-header-right">
-      <a href="../index.html" class="admin-view-btn" target="_blank">Ver tienda →</a>
       <button class="logout-btn" onclick="logout()">Cerrar sesión</button>
     </div>
   </header>
+
+  <!-- ── Mobile nav ── -->
+  <nav class="mobile-nav" id="mobile-nav">
+    <p class="mobile-nav-section">Menú</p>
+    <button class="sidebar-link active" id="mnav-pedidos" onclick="switchTab('pedidos', this); closeMobileMenu()">
+      <span class="icon">📦</span> Pedidos
+      <span class="sidebar-badge" id="pending-badge-mobile">0</span>
+    </button>
+    <button class="sidebar-link" id="mnav-productos" onclick="switchTab('productos', this); closeMobileMenu()">
+      <span class="icon">👕</span> Productos
+    </button>
+    <div style="margin:8px 0;border-top:1px solid #f0f0f4;"></div>
+    <p class="mobile-nav-section">Accesos</p>
+    <a href="../index.html" class="sidebar-link" target="_blank" onclick="closeMobileMenu()">
+      <span class="icon">🏠</span> Tienda
+    </a>
+    <a href="../catalogo.html" class="sidebar-link" target="_blank" onclick="closeMobileMenu()">
+      <span class="icon">🛍️</span> Catálogo
+    </a>
+    <div style="margin:8px 0;border-top:1px solid #f0f0f4;"></div>
+    <button class="sidebar-link" style="color:#c0392b;" onclick="logout()">
+      <span class="icon">🚪</span> Cerrar sesión
+    </button>
+  </nav>
+  <div class="mobile-nav-overlay" id="mobile-nav-overlay" onclick="closeMobileMenu()"></div>
 
   <div class="admin-layout">
 
@@ -507,21 +596,23 @@
             <option value="cancelado">Cancelados</option>
           </select>
         </div>
-        <table class="data-table" id="orders-table">
-          <thead>
-            <tr>
-              <th>#</th>
-              <th>Fecha</th>
-              <th>Cliente</th>
-              <th>WhatsApp</th>
-              <th>Localidad</th>
-              <th>Total</th>
-              <th>Estado</th>
-              <th>Acciones</th>
-            </tr>
-          </thead>
-          <tbody id="orders-body"></tbody>
-        </table>
+        <div class="table-scroll">
+          <table class="data-table" id="orders-table">
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Fecha</th>
+                <th>Cliente</th>
+                <th>WhatsApp</th>
+                <th>Localidad</th>
+                <th>Total</th>
+                <th>Estado</th>
+                <th>Acciones</th>
+              </tr>
+            </thead>
+            <tbody id="orders-body"></tbody>
+          </table>
+        </div>
       </div>
 
       <!-- ── PRODUCTOS ── -->
@@ -532,21 +623,23 @@
             + Nuevo producto
           </button>
         </div>
-        <table class="data-table" id="products-table">
-          <thead>
-            <tr>
-              <th></th>
-              <th>Nombre</th>
-              <th>Categoría</th>
-              <th>Precio</th>
-              <th>Talles</th>
-              <th>Colores</th>
-              <th>Estado</th>
-              <th>Acciones</th>
-            </tr>
-          </thead>
-          <tbody id="products-body"></tbody>
-        </table>
+        <div class="table-scroll">
+          <table class="data-table" id="products-table">
+            <thead>
+              <tr>
+                <th></th>
+                <th>Nombre</th>
+                <th>Categoría</th>
+                <th>Precio</th>
+                <th>Talles</th>
+                <th>Colores</th>
+                <th>Estado</th>
+                <th>Acciones</th>
+              </tr>
+            </thead>
+            <tbody id="products-body"></tbody>
+          </table>
+        </div>
       </div>
 
     </main>
@@ -720,8 +813,28 @@
           <p class="stat-hint">Pedidos confirmados</p>
         </div>
       `;
-      document.getElementById('pending-badge').textContent = pending || '';
-      document.getElementById('pending-badge').style.display = pending ? 'inline' : 'none';
+      const badgeVal = pending || '';
+      const badgeShow = pending ? 'inline' : 'none';
+      document.getElementById('pending-badge').textContent = badgeVal;
+      document.getElementById('pending-badge').style.display = badgeShow;
+      document.getElementById('pending-badge-mobile').textContent = badgeVal;
+      document.getElementById('pending-badge-mobile').style.display = badgeShow;
+    }
+
+    // ── Mobile menu ────────────────────────────────────
+    function toggleMobileMenu() {
+      const nav     = document.getElementById('mobile-nav');
+      const overlay = document.getElementById('mobile-nav-overlay');
+      const btn     = document.getElementById('mobile-menu-btn');
+      const isOpen  = nav.classList.contains('open');
+      nav.classList.toggle('open');
+      overlay.classList.toggle('open');
+      btn.classList.toggle('open');
+    }
+    function closeMobileMenu() {
+      document.getElementById('mobile-nav').classList.remove('open');
+      document.getElementById('mobile-nav-overlay').classList.remove('open');
+      document.getElementById('mobile-menu-btn').classList.remove('open');
     }
 
     // ── Tabs ───────────────────────────────────────────
@@ -733,6 +846,9 @@
       const tabBtn = document.getElementById('tab-btn-' + name);
       if (tabBtn) tabBtn.classList.add('active');
       if (btn) btn.classList.add('active');
+      // Sync mobile nav active state
+      document.getElementById('mnav-pedidos').classList.toggle('active', name === 'pedidos');
+      document.getElementById('mnav-productos').classList.toggle('active', name === 'productos');
     }
 
     // ── PEDIDOS ────────────────────────────────────────
