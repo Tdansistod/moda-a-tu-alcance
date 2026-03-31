@@ -772,21 +772,21 @@ button { cursor: pointer; font-family: var(--font-sans); border: none; backgroun
 
 [data-theme="dark"] {
   --black:   #f0ede8;
-  --white:   #0f0f0f;
-  --gray-50: #1a1a1a;
-  --gray-100:#252525;
-  --gray-300:#3a3a3a;
+  --white:   #000000;
+  --gray-50: #181818;
+  --gray-100:#222222;
+  --gray-300:#383838;
   --gray-500:#888888;
   --gray-700:#c0bdb8;
 }
 
 /* Footer & announcement bar stay dark regardless of theme */
-[data-theme="dark"] .footer           { background: #0d0d0d; }
-[data-theme="dark"] .announcement-bar { background: #0d0d0d; color: rgba(255,255,255,0.75); }
+[data-theme="dark"] .footer           { background: #000000; }
+[data-theme="dark"] .announcement-bar { background: #000000; color: rgba(255,255,255,0.75); }
 
 /* Hero gradient override */
 [data-theme="dark"] .hero-bg {
-  background: linear-gradient(135deg, #1e1c1a 0%, #161413 50%, #0f0e0d 100%);
+  background: linear-gradient(135deg, #1e1c1a 0%, #141414 50%, #000000 100%);
 }
 [data-theme="dark"] .hero-bg::after { background: rgba(255,255,255,0.03); }
 
