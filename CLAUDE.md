@@ -140,6 +140,26 @@ created_at  timestamptz
 
 ## Lo que queda pendiente (backlog conocido)
 
-- [ ] Upload de imágenes de productos desde el dashboard admin (en vez de pegar URL)
 - [ ] Variables de entorno en Vercel (no crítico — el anon key es público y el sitio es 100% estático sin build step)
 - [ ] Posible migración a build tool (Vite) si se necesitan env vars reales o módulos ES
+
+---
+
+## Historial de cambios relevantes
+
+### Dark mode — negro puro
+- `--white` en dark mode cambiado a `#000000` (antes `#0f0f0f`) para que el fondo del header coincida con el fondo del logo-dark
+- Footer y announcement bar también usan `#000000`
+- Hero gradient oscuro termina en `#000000`
+- Los grays intermedios (`--gray-50`, `--gray-100`, `--gray-300`) se ajustaron para mantener contraste
+
+### Favicon
+- Archivo: `/favicon.svg`
+- Diseño: anteojos de sol minimalistas, fondo negro `#111` con trazo crema `#f0ede8`
+- Agregado en todas las páginas públicas (index, catálogo, producto, carrito, checkout, pedido-confirmado)
+- Admin excluido (sin favicon intencional)
+
+### Open Graph / Share image
+- `og:image` y `twitter:image` apuntan a `logo-light.jpg` en Supabase Storage
+- OG tags completos en: `index.html`, `catalogo.html`, `producto.html`
+- Carrito, checkout y pedido-confirmado solo tienen favicon (no se comparten en redes)
