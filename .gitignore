@@ -1,0 +1,20 @@
+# Dependencies
+node_modules/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Editors
+.vscode/
+.idea/
+*.suo
+*.user
+
+# Env (por si se agregan en el futuro)
+.env
+.env.local
+.env.*.local
+
+# Vercel
+.vercel

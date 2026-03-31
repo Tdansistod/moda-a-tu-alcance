@@ -86,43 +86,55 @@
 
   <div class="login-card">
     <div class="login-logo">
-      <img src="../assets/logo.png" alt="Emma"/>
+      <img src="https://pztftznwvrsoipiuhwof.supabase.co/storage/v1/object/public/assets/logo/logo-dark.jpg" alt="Emma"/>
     </div>
     <p class="login-subtitle">Panel de administración</p>
 
     <form id="login-form" novalidate>
       <div class="form-group">
-        <label class="form-label" for="usuario">Usuario</label>
-        <input class="form-input" type="text" id="usuario" placeholder="emma" autocomplete="username"/>
+        <label class="form-label" for="email">Email</label>
+        <input class="form-input" type="email" id="email" placeholder="admin@emma.com" autocomplete="email"/>
       </div>
       <div class="form-group">
         <label class="form-label" for="password">Contraseña</label>
         <input class="form-input" type="password" id="password" placeholder="••••••••" autocomplete="current-password"/>
       </div>
-      <button type="submit" class="login-btn">Ingresar</button>
-      <div class="login-error" id="login-error">Usuario o contraseña incorrectos</div>
+      <button type="submit" class="login-btn" id="login-btn">Ingresar</button>
+      <div class="login-error" id="login-error">Email o contraseña incorrectos</div>
     </form>
 
     <p class="back-link"><a href="../index.html">← Volver a la tienda</a></p>
   </div>
 
-  <script src="../js/data.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+  <script src="../js/supabase.js"></script>
   <script>
     // Redirect if already logged in
-    if (adminLoggedIn()) location.href = 'dashboard.html';
+    db.auth.getSession().then(({ data: { session } }) => {
+      if (session) location.href = 'dashboard.html';
+    });
 
-    document.getElementById('login-form').addEventListener('submit', e => {
+    document.getElementById('login-form').addEventListener('submit', async e => {
       e.preventDefault();
-      const u = document.getElementById('usuario').value.trim();
-      const p = document.getElementById('password').value;
+      const email    = document.getElementById('email').value.trim();
+      const password = document.getElementById('password').value;
+      const btn      = document.getElementById('login-btn');
+      const errEl    = document.getElementById('login-error');
 
-      if (u === ADMIN_USER && p === ADMIN_PASS) {
-        sessionStorage.setItem('emma_admin', 'ok');
-        location.href = 'dashboard.html';
-      } else {
-        document.getElementById('login-error').classList.add('show');
+      btn.disabled    = true;
+      btn.textContent = 'Ingresando...';
+      errEl.classList.remove('show');
+
+      const { error } = await db.auth.signInWithPassword({ email, password });
+
+      if (error) {
+        errEl.classList.add('show');
         document.getElementById('password').value = '';
         document.getElementById('password').focus();
+        btn.disabled    = false;
+        btn.textContent = 'Ingresar';
+      } else {
+        location.href = 'dashboard.html';
       }
     });
 

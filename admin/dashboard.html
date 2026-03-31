@@ -27,7 +27,7 @@
       align-items: center;
       gap: 16px;
     }
-    .admin-logo { height: 30px; filter: brightness(0) invert(1); }
+    .admin-logo { height: 30px; }
     .admin-badge {
       font-size: 9px;
       font-weight: 700;
@@ -408,6 +408,31 @@
     .table-empty .e-icon { font-size: 36px; margin-bottom: 10px; }
     .table-empty p { font-size: 14px; }
 
+    /* Image upload widget */
+    .img-upload-area {
+      border: 2px dashed #ddd;
+      min-height: 130px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: border-color 0.2s;
+      overflow: hidden;
+    }
+    .img-upload-area:hover { border-color: var(--black); }
+    .img-upload-area img { max-height: 160px; width: 100%; object-fit: contain; display: block; }
+    .img-upload-placeholder {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+      color: #bbb;
+      font-size: 12px;
+      padding: 20px;
+      text-align: center;
+    }
+    .img-upload-placeholder .upload-icon { font-size: 28px; }
+
     /* Responsive */
     @media (max-width: 1024px) {
       .stats-grid { grid-template-columns: repeat(2, 1fr); }
@@ -421,12 +446,12 @@
     }
   </style>
 </head>
-<body>
+<body style="display:none">
 
   <!-- ── Admin Header ── -->
   <header class="admin-header">
     <div class="admin-header-left">
-      <img src="../assets/logo.png" alt="Emma" class="admin-logo"/>
+      <img src="https://pztftznwvrsoipiuhwof.supabase.co/storage/v1/object/public/assets/logo/logo-light.jpg" alt="Emma" class="admin-logo"/>
       <span class="admin-badge">Admin</span>
     </div>
     <div class="admin-header-right">
@@ -608,9 +633,17 @@
             </div>
           </div>
           <div class="mform-group">
-            <label class="mform-label">URL de imagen principal *</label>
-            <input class="mform-input" type="text" id="p-imagen" placeholder="../product-images/foto.jpg"/>
-            <p class="mform-hint">Ruta relativa o URL de imagen</p>
+            <label class="mform-label">Imagen principal *</label>
+            <div class="img-upload-area" id="img-upload-area" onclick="document.getElementById('p-imagen-file').click()">
+              <img id="img-preview" style="display:none;" alt="Preview"/>
+              <div class="img-upload-placeholder" id="img-placeholder">
+                <span class="upload-icon">🖼️</span>
+                <span>Hacé clic para subir una imagen</span>
+                <span style="font-size:11px;color:#ccc;">JPG · PNG · WEBP</span>
+              </div>
+            </div>
+            <input type="file" id="p-imagen-file" accept="image/jpeg,image/png,image/webp,image/gif" style="display:none" onchange="handleImageSelect(this)"/>
+            <p class="mform-hint">La imagen se sube al storage de Supabase al guardar.</p>
           </div>
           <div style="display:flex;flex-direction:column;gap:0;">
             <div class="toggle-row">
@@ -649,17 +682,17 @@
   <script src="../js/data.js"></script>
   <script>
     // ── Auth guard ─────────────────────────────────────
-    if (!adminLoggedIn()) location.href = 'login.html';
-
-    function logout() {
-      sessionStorage.removeItem('emma_admin');
+    async function logout() {
+      await db.auth.signOut();
       location.href = 'login.html';
     }
 
     // ── State ──────────────────────────────────────────
-    let pedidosList    = [];
-    let currentOrderId = null;
+    let pedidosList      = [];
+    let currentOrderId   = null;
     let editingProductId = null;
+    let pendingImageFile = null;   // File seleccionado para subir
+    let currentImageUrl  = '';     // URL existente (al editar)
 
     // ── Stats ──────────────────────────────────────────
     function renderStats() {
@@ -780,7 +813,7 @@
         <div class="order-items-list">
           ${p.items.map(item => `
             <div class="order-item-row">
-              <img src="../${item.imagen}" alt="${item.nombre}" onerror="this.style.display='none'"/>
+              <img src="${item.imagen && item.imagen.startsWith('http') ? item.imagen : `../${item.imagen}`}" alt="${item.nombre}" onerror="this.style.display='none'"/>
               <div>
                 <p style="font-weight:600;">${item.nombre}</p>
                 <p style="font-size:11px;color:#888;">${item.talle} / ${item.color} ×${item.qty}</p>
@@ -819,10 +852,14 @@
         tbody.innerHTML = `<tr><td colspan="8"><div class="table-empty"><div class="e-icon">👕</div><p>No hay productos</p></div></td></tr>`;
         return;
       }
-      tbody.innerHTML = list.map(p => `
+      tbody.innerHTML = list.map(p => {
+        const imgSrc = (p.imagenes && p.imagenes[0])
+          ? (p.imagenes[0].startsWith('http') ? p.imagenes[0] : `../${p.imagenes[0]}`)
+          : '';
+        return `
         <tr>
           <td>
-            <img class="product-thumb" src="../${p.imagenes[0]}" alt="${p.nombre}" onerror="this.src='data:image/svg+xml,<svg xmlns=\\'http://www.w3.org/2000/svg\\' width=\\'44\\' height=\\'56\\'><rect fill=\\'%23eee\\' width=\\'44\\' height=\\'56\\'/></svg>'"/>
+            <img class="product-thumb" src="${imgSrc}" alt="${p.nombre}" onerror="this.src='data:image/svg+xml,<svg xmlns=\\'http://www.w3.org/2000/svg\\' width=\\'44\\' height=\\'56\\'><rect fill=\\'%23eee\\' width=\\'44\\' height=\\'56\\'/></svg>'"/>
           </td>
           <td><strong>${p.nombre}</strong></td>
           <td style="font-size:12px;color:#888;">${catNames[p.categoria] || p.categoria}</td>
@@ -845,7 +882,8 @@
             </div>
           </td>
         </tr>
-      `).join('');
+      `;
+      }).join('');
     }
 
     function filterProductos() {
@@ -854,8 +892,35 @@
       renderProductos(list);
     }
 
+    function showImagePreview(url) {
+      const preview     = document.getElementById('img-preview');
+      const placeholder = document.getElementById('img-placeholder');
+      if (url) {
+        const src = url.startsWith('http') ? url : `../${url}`;
+        preview.src = src;
+        preview.style.display = 'block';
+        placeholder.style.display = 'none';
+      } else {
+        preview.src = '';
+        preview.style.display = 'none';
+        placeholder.style.display = 'flex';
+      }
+    }
+
+    function handleImageSelect(input) {
+      const file = input.files[0];
+      if (!file) return;
+      pendingImageFile = file;
+      const reader = new FileReader();
+      reader.onload = e => showImagePreview(e.target.result);
+      reader.readAsDataURL(file);
+    }
+
     function openProductModal(id) {
       editingProductId = id || null;
+      pendingImageFile = null;
+      currentImageUrl  = '';
+      document.getElementById('p-imagen-file').value = '';
       document.getElementById('product-modal-title').textContent = id ? 'Editar producto' : 'Nuevo producto';
 
       if (id) {
@@ -869,12 +934,14 @@
         document.getElementById('p-descripcion').value  = p.descripcion || '';
         document.getElementById('p-talles').value       = (p.talles  || []).join(', ');
         document.getElementById('p-colores').value      = (p.colores || []).join(', ');
-        document.getElementById('p-imagen').value       = p.imagenes ? p.imagenes[0] : '';
         document.getElementById('p-nuevo').checked      = !!p.nuevo;
         document.getElementById('p-sale').checked       = !!p.sale;
         document.getElementById('p-destacado').checked  = !!p.destacado;
+        currentImageUrl = (p.imagenes && p.imagenes[0]) || '';
+        showImagePreview(currentImageUrl);
       } else {
         document.getElementById('product-form').reset();
+        showImagePreview('');
       }
       document.getElementById('product-modal').classList.add('open');
     }
@@ -884,29 +951,36 @@
     async function saveProduct() {
       const nombre = document.getElementById('p-nombre').value.trim();
       const precio = Number(document.getElementById('p-precio').value);
-      const imagen = document.getElementById('p-imagen').value.trim();
-      if (!nombre || !precio || !imagen) { alert('Completá los campos obligatorios (*)'); return; }
-
-      const prod = {
-        nombre,
-        categoria:   document.getElementById('p-categoria').value,
-        genero:      document.getElementById('p-genero').value,
-        precio,
-        precioAntes: Number(document.getElementById('p-precio-antes').value) || null,
-        descripcion: document.getElementById('p-descripcion').value.trim(),
-        talles:      document.getElementById('p-talles').value.split(',').map(s => s.trim()).filter(Boolean),
-        colores:     document.getElementById('p-colores').value.split(',').map(s => s.trim()).filter(Boolean),
-        imagenes:    [imagen],
-        nuevo:       document.getElementById('p-nuevo').checked,
-        sale:        document.getElementById('p-sale').checked,
-        destacado:   document.getElementById('p-destacado').checked
-      };
+      if (!nombre || !precio) { alert('Completá los campos obligatorios (nombre y precio).'); return; }
+      if (!pendingImageFile && !currentImageUrl) { alert('Seleccioná una imagen para el producto.'); return; }
 
       const saveBtn = document.querySelector('#product-modal .btn-dark');
       saveBtn.disabled = true;
-      saveBtn.textContent = 'Guardando...';
+      saveBtn.textContent = 'Subiendo imagen...';
 
       try {
+        let imagenUrl = currentImageUrl;
+        if (pendingImageFile) {
+          imagenUrl = await storage_uploadProductImage(pendingImageFile);
+        }
+
+        saveBtn.textContent = 'Guardando...';
+
+        const prod = {
+          nombre,
+          categoria:   document.getElementById('p-categoria').value,
+          genero:      document.getElementById('p-genero').value,
+          precio,
+          precioAntes: Number(document.getElementById('p-precio-antes').value) || null,
+          descripcion: document.getElementById('p-descripcion').value.trim(),
+          talles:      document.getElementById('p-talles').value.split(',').map(s => s.trim()).filter(Boolean),
+          colores:     document.getElementById('p-colores').value.split(',').map(s => s.trim()).filter(Boolean),
+          imagenes:    [imagenUrl],
+          nuevo:       document.getElementById('p-nuevo').checked,
+          sale:        document.getElementById('p-sale').checked,
+          destacado:   document.getElementById('p-destacado').checked
+        };
+
         if (editingProductId) {
           await db_updateProduct(editingProductId, prod);
         } else {
@@ -946,6 +1020,10 @@
 
     // ── Init ───────────────────────────────────────────
     (async function init() {
+      const { data: { session } } = await db.auth.getSession();
+      if (!session) { location.href = 'login.html'; return; }
+      document.body.style.display = '';
+
       document.getElementById('orders-body').innerHTML =
         `<tr><td colspan="8" style="text-align:center;padding:40px;color:#aaa;">Cargando pedidos...</td></tr>`;
       document.getElementById('products-body').innerHTML =

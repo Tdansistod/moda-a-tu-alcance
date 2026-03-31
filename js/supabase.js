@@ -112,3 +112,18 @@ async function db_actualizarEstadoPedido(id, estado) {
     .eq('id', id);
   if (error) throw error;
 }
+
+/* ── Storage ────────────────────────────────────────────── */
+
+async function storage_uploadProductImage(file) {
+  const ext      = file.name.split('.').pop().toLowerCase();
+  const fileName = `${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
+  const path     = `product-images/${fileName}`;
+
+  const { error } = await db.storage
+    .from('assets')
+    .upload(path, file, { contentType: file.type, upsert: false });
+
+  if (error) throw error;
+  return `${SUPABASE_URL}/storage/v1/object/public/assets/${path}`;
+}

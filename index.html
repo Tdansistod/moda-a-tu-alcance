@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Emma — Moda a tu Alcance</title>
   <meta name="description" content="Ropa y accesorios para mujer y hombre. Elegí tu look y recibilo en casa." />
+  <script>(function(){var t=localStorage.getItem('emma_theme')||(window.matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light');document.documentElement.setAttribute('data-theme',t);})();</script>
   <link rel="stylesheet" href="css/styles.css" />
 </head>
 <body>
@@ -22,7 +23,8 @@
 
         <!-- Logo -->
         <a href="index.html" class="logo" aria-label="Emma - Inicio">
-          <img src="assets/logo.png" alt="Emma Moda a tu Alcance" />
+          <img class="logo-img-dark"  src="https://pztftznwvrsoipiuhwof.supabase.co/storage/v1/object/public/assets/logo/logo-dark.jpg"  alt="Emma"/>
+          <img class="logo-img-light" src="https://pztftznwvrsoipiuhwof.supabase.co/storage/v1/object/public/assets/logo/logo-light.jpg" alt="Emma"/>
         </a>
 
         <!-- Desktop Nav -->
@@ -44,6 +46,10 @@
             Carrito
             <span class="cart-badge" id="cart-count">0</span>
           </a>
+          <button class="theme-toggle" onclick="toggleTheme()" aria-label="Cambiar tema">
+            <svg class="theme-icon-light" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+            <svg class="theme-icon-dark" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+          </button>
           <button class="hamburger" id="hamburger-btn" aria-label="Menú" aria-expanded="false">
             <span></span><span></span><span></span>
           </button>
@@ -247,7 +253,7 @@
       <div class="footer-grid">
 
         <div class="footer-brand">
-          <img src="assets/logo.png" alt="Emma" class="footer-logo" />
+          <img src="https://pztftznwvrsoipiuhwof.supabase.co/storage/v1/object/public/assets/logo/logo-light.jpg" alt="Emma" class="footer-logo" />
           <p>Indumentaria femenina y masculina.<br>Calidad, estilo y precio justo en cada prenda.</p>
           <div class="footer-social">
             <a href="https://instagram.com/moda_alcance_emma" target="_blank" rel="noopener" aria-label="Instagram">
@@ -329,6 +335,7 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
   <script src="js/supabase.js"></script>
   <script src="js/data.js"></script>
+  <script src="js/theme.js"></script>
   <script>
     // Mobile menu toggle
     const hamburger = document.getElementById('hamburger-btn');

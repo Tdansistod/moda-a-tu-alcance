@@ -62,15 +62,6 @@ function actualizarBadge() {
   if (el) el.textContent = cantidadCarrito();
 }
 
-/* ── Admin auth (sessionStorage) ────────────────────────── */
-
-const ADMIN_USER = 'emma';
-const ADMIN_PASS = 'emma2026';
-
-function adminLoggedIn() {
-  return sessionStorage.getItem('emma_admin') === 'ok';
-}
-
-function requireAdmin() {
-  if (!adminLoggedIn()) window.location.href = '../admin/login.html';
-}
+/* ── Admin auth (Supabase Auth) ──────────────────────────── */
+// La sesión la maneja Supabase internamente (localStorage).
+// Usar db.auth.getSession() para verificar, db.auth.signOut() para cerrar.
