@@ -127,3 +127,12 @@ async function storage_uploadProductImage(file) {
   if (error) throw error;
   return `${SUPABASE_URL}/storage/v1/object/public/assets/${path}`;
 }
+
+async function storage_deleteImage(url) {
+  const marker = '/object/public/assets/';
+  const idx    = url.indexOf(marker);
+  if (idx === -1) return; // not a storage URL, skip
+  const path = url.slice(idx + marker.length);
+  const { error } = await db.storage.from('assets').remove([path]);
+  if (error) console.warn('No se pudo eliminar imagen del storage:', error.message);
+}

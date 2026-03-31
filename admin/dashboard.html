@@ -410,29 +410,57 @@
     .table-empty p { font-size: 14px; }
 
     /* Image upload widget */
-    .img-upload-area {
-      border: 2px dashed #ddd;
-      min-height: 130px;
+    .img-gallery-editor {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      padding: 12px;
+      background: #fafafa;
+      border: 1.5px dashed #d0d0d8;
+      border-radius: 4px;
+      min-height: 92px;
+      align-items: flex-start;
+    }
+    .img-thumb {
+      position: relative;
+      width: 72px; height: 72px;
+      border-radius: 4px;
+      overflow: hidden;
+      border: 1.5px solid #e0e0e6;
+      flex-shrink: 0;
+    }
+    .img-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+    .img-thumb-new { border-color: #7cb9e8; }
+    .img-thumb-remove {
+      position: absolute;
+      top: 2px; right: 2px;
+      width: 18px; height: 18px;
+      background: rgba(0,0,0,0.65);
+      color: #fff;
+      border: none;
+      border-radius: 50%;
+      font-size: 13px;
+      line-height: 1;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0;
+    }
+    .img-add-btn {
+      width: 72px; height: 72px;
+      border: 1.5px dashed #c0c0c8;
+      border-radius: 4px;
       display: flex;
       align-items: center;
       justify-content: center;
       cursor: pointer;
-      transition: border-color 0.2s;
-      overflow: hidden;
+      color: #aaa;
+      font-size: 26px;
+      transition: all 0.15s;
+      flex-shrink: 0;
     }
-    .img-upload-area:hover { border-color: var(--black); }
-    .img-upload-area img { max-height: 160px; width: 100%; object-fit: contain; display: block; }
-    .img-upload-placeholder {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 6px;
-      color: #bbb;
-      font-size: 12px;
-      padding: 20px;
-      text-align: center;
-    }
-    .img-upload-placeholder .upload-icon { font-size: 28px; }
+    .img-add-btn:hover { border-color: #888; color: #555; background: #f0f0f4; }
 
     /* ── Hamburger ── */
     .admin-hamburger {
@@ -724,17 +752,10 @@
             </div>
           </div>
           <div class="mform-group">
-            <label class="mform-label">Imagen principal *</label>
-            <div class="img-upload-area" id="img-upload-area" onclick="document.getElementById('p-imagen-file').click()">
-              <img id="img-preview" style="display:none;" alt="Preview"/>
-              <div class="img-upload-placeholder" id="img-placeholder">
-                <span class="upload-icon">🖼️</span>
-                <span>Hacé clic para subir una imagen</span>
-                <span style="font-size:11px;color:#ccc;">JPG · PNG · WEBP</span>
-              </div>
-            </div>
-            <input type="file" id="p-imagen-file" accept="image/jpeg,image/png,image/webp,image/gif" style="display:none" onchange="handleImageSelect(this)"/>
-            <p class="mform-hint">La imagen se sube al storage de Supabase al guardar.</p>
+            <label class="mform-label">Imágenes *</label>
+            <div class="img-gallery-editor" id="img-gallery-editor"></div>
+            <input type="file" id="p-imagen-file" accept="image/jpeg,image/png,image/webp,image/gif" style="display:none" multiple onchange="handleImageSelect(this)"/>
+            <p class="mform-hint">La primera imagen es la principal. Las imágenes se suben al guardar.</p>
           </div>
           <div style="display:flex;flex-direction:column;gap:0;">
             <div class="toggle-row">
@@ -781,9 +802,10 @@
     // ── State ──────────────────────────────────────────
     let pedidosList      = [];
     let currentOrderId   = null;
-    let editingProductId = null;
-    let pendingImageFile = null;   // File seleccionado para subir
-    let currentImageUrl  = '';     // URL existente (al editar)
+    let editingProductId  = null;
+    let currentImageUrls  = [];    // URLs existentes (al editar)
+    let pendingImageFiles = [];    // { file, previewUrl } pendientes de subir
+    let removedImageUrls  = [];    // URLs a borrar del storage al guardar
 
     // ── Stats ──────────────────────────────────────────
     function renderStats() {
@@ -1006,34 +1028,63 @@
       renderProductos(list);
     }
 
-    function showImagePreview(url) {
-      const preview     = document.getElementById('img-preview');
-      const placeholder = document.getElementById('img-placeholder');
-      if (url) {
-        const src = url.startsWith('http') ? url : `../${url}`;
-        preview.src = src;
-        preview.style.display = 'block';
-        placeholder.style.display = 'none';
-      } else {
-        preview.src = '';
-        preview.style.display = 'none';
-        placeholder.style.display = 'flex';
-      }
+    function renderImageGalleryEditor() {
+      const editor = document.getElementById('img-gallery-editor');
+      editor.innerHTML = '';
+
+      currentImageUrls.forEach((url, i) => {
+        const thumb = document.createElement('div');
+        thumb.className = 'img-thumb';
+        thumb.innerHTML = `<img src="${url}" alt="Imagen ${i+1}"/>
+          <button type="button" class="img-thumb-remove" onclick="removeCurrentImage(${i})">×</button>`;
+        editor.appendChild(thumb);
+      });
+
+      pendingImageFiles.forEach((item, i) => {
+        const thumb = document.createElement('div');
+        thumb.className = 'img-thumb img-thumb-new';
+        thumb.innerHTML = `<img src="${item.previewUrl}" alt="Nueva imagen"/>
+          <button type="button" class="img-thumb-remove" onclick="removePendingImage(${i})">×</button>`;
+        editor.appendChild(thumb);
+      });
+
+      const addBtn = document.createElement('div');
+      addBtn.className = 'img-add-btn';
+      addBtn.title = 'Agregar imagen';
+      addBtn.innerHTML = '+';
+      addBtn.onclick = () => document.getElementById('p-imagen-file').click();
+      editor.appendChild(addBtn);
+    }
+
+    function removeCurrentImage(i) {
+      removedImageUrls.push(currentImageUrls[i]);
+      currentImageUrls.splice(i, 1);
+      renderImageGalleryEditor();
+    }
+
+    function removePendingImage(i) {
+      pendingImageFiles.splice(i, 1);
+      renderImageGalleryEditor();
     }
 
     function handleImageSelect(input) {
-      const file = input.files[0];
-      if (!file) return;
-      pendingImageFile = file;
-      const reader = new FileReader();
-      reader.onload = e => showImagePreview(e.target.result);
-      reader.readAsDataURL(file);
+      const files = Array.from(input.files);
+      files.forEach(file => {
+        const reader = new FileReader();
+        reader.onload = e => {
+          pendingImageFiles.push({ file, previewUrl: e.target.result });
+          renderImageGalleryEditor();
+        };
+        reader.readAsDataURL(file);
+      });
+      input.value = '';
     }
 
     function openProductModal(id) {
-      editingProductId = id || null;
-      pendingImageFile = null;
-      currentImageUrl  = '';
+      editingProductId  = id || null;
+      currentImageUrls  = [];
+      pendingImageFiles = [];
+      removedImageUrls  = [];
       document.getElementById('p-imagen-file').value = '';
       document.getElementById('product-modal-title').textContent = id ? 'Editar producto' : 'Nuevo producto';
 
@@ -1051,12 +1102,11 @@
         document.getElementById('p-nuevo').checked      = !!p.nuevo;
         document.getElementById('p-sale').checked       = !!p.sale;
         document.getElementById('p-destacado').checked  = !!p.destacado;
-        currentImageUrl = (p.imagenes && p.imagenes[0]) || '';
-        showImagePreview(currentImageUrl);
+        currentImageUrls = [...(p.imagenes || [])];
       } else {
         document.getElementById('product-form').reset();
-        showImagePreview('');
       }
+      renderImageGalleryEditor();
       document.getElementById('product-modal').classList.add('open');
     }
 
@@ -1066,17 +1116,22 @@
       const nombre = document.getElementById('p-nombre').value.trim();
       const precio = Number(document.getElementById('p-precio').value);
       if (!nombre || !precio) { alert('Completá los campos obligatorios (nombre y precio).'); return; }
-      if (!pendingImageFile && !currentImageUrl) { alert('Seleccioná una imagen para el producto.'); return; }
+      if (currentImageUrls.length === 0 && pendingImageFiles.length === 0) {
+        alert('Seleccioná al menos una imagen para el producto.'); return;
+      }
 
       const saveBtn = document.querySelector('#product-modal .btn-dark');
       saveBtn.disabled = true;
-      saveBtn.textContent = 'Subiendo imagen...';
+      saveBtn.textContent = 'Subiendo imágenes...';
 
       try {
-        let imagenUrl = currentImageUrl;
-        if (pendingImageFile) {
-          imagenUrl = await storage_uploadProductImage(pendingImageFile);
-        }
+        // Borrar del storage las imágenes removidas
+        await Promise.all(removedImageUrls.map(url => storage_deleteImage(url)));
+
+        // Subir imágenes nuevas
+        const newUrls = await Promise.all(
+          pendingImageFiles.map(item => storage_uploadProductImage(item.file))
+        );
 
         saveBtn.textContent = 'Guardando...';
 
@@ -1089,7 +1144,7 @@
           descripcion: document.getElementById('p-descripcion').value.trim(),
           talles:      document.getElementById('p-talles').value.split(',').map(s => s.trim()).filter(Boolean),
           colores:     document.getElementById('p-colores').value.split(',').map(s => s.trim()).filter(Boolean),
-          imagenes:    [imagenUrl],
+          imagenes:    [...currentImageUrls, ...newUrls],
           nuevo:       document.getElementById('p-nuevo').checked,
           sale:        document.getElementById('p-sale').checked,
           destacado:   document.getElementById('p-destacado').checked
@@ -1115,7 +1170,11 @@
     async function deleteProduct(id) {
       if (!confirm('¿Eliminar este producto? Esta acción no se puede deshacer.')) return;
       try {
+        const prod = PRODUCTOS.find(p => p.id === id);
         await db_deleteProduct(id);
+        if (prod?.imagenes?.length) {
+          await Promise.all(prod.imagenes.map(url => storage_deleteImage(url)));
+        }
         await loadProductos();
         filterProductos();
         renderStats();
