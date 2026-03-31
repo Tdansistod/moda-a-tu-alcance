@@ -223,7 +223,7 @@ button { cursor: pointer; font-family: var(--font-sans); border: none; backgroun
 .hero-bg {
   position: absolute;
   inset: 0;
-  background: url('https://pztftznwvrsoipiuhwof.supabase.co/storage/v1/object/public/assets/hero/hero.jpg') center/cover no-repeat;
+  background: linear-gradient(135deg, #f0ede8 0%, #e8e4dc 50%, #ddd9d0 100%);
 }
 
 /* Decorative shape */
@@ -753,8 +753,9 @@ button { cursor: pointer; font-family: var(--font-sans); border: none; backgroun
   .hamburger { display: flex; }
 
   .hero-inner { grid-template-columns: 1fr; }
-  .hero-image-panel { display: none; }
-  .hero-content { padding: 60px 0; }
+  .hero-image-panel { height: 320px; order: 1; }
+  .hero-content { padding: 40px 0 24px; order: 0; }
+  .hero-image-label { display: none; }
 
   .steps-grid { grid-template-columns: 1fr; gap: 32px; }
   .steps-grid::before { display: none; }
@@ -793,6 +794,7 @@ button { cursor: pointer; font-family: var(--font-sans); border: none; backgroun
   background: linear-gradient(135deg, #1e1c1a 0%, #141414 50%, #000000 100%);
 }
 [data-theme="dark"] .hero-bg::after { background: rgba(255,255,255,0.03); }
+[data-theme="dark"] .hero-image-panel img { filter: brightness(0.75); }
 
 /* ── Logo swap ──────────────────────────────────────── */
 .logo-img-light { display: block; }
