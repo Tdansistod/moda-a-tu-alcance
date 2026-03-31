@@ -1,0 +1,539 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Producto — Emma Moda a tu Alcance</title>
+  <link rel="stylesheet" href="css/styles.css"/>
+  <style>
+    .product-detail {
+      padding: 48px 0 80px;
+    }
+    .product-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 64px;
+      align-items: start;
+    }
+
+    /* ── Gallery ── */
+    .gallery { position: sticky; top: 86px; }
+    .gallery-main {
+      width: 100%;
+      aspect-ratio: 3/4;
+      overflow: hidden;
+      background: var(--gray-100);
+      margin-bottom: 12px;
+    }
+    .gallery-main img {
+      width: 100%; height: 100%;
+      object-fit: cover;
+      transition: opacity 0.3s;
+    }
+    .gallery-thumbs {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 8px;
+    }
+    .gallery-thumb {
+      aspect-ratio: 1;
+      overflow: hidden;
+      background: var(--gray-100);
+      cursor: pointer;
+      border: 2px solid transparent;
+      transition: border-color 0.2s;
+    }
+    .gallery-thumb img { width:100%; height:100%; object-fit:cover; }
+    .gallery-thumb.active { border-color: var(--black); }
+
+    /* ── Product info ── */
+    .product-info { padding-top: 8px; }
+    .product-tags {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 14px;
+    }
+    .product-tag {
+      font-size: 9px;
+      font-weight: 700;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      padding: 4px 10px;
+      background: var(--black);
+      color: var(--white);
+    }
+    .product-tag.sale { background: #c0392b; }
+    .product-tag.nuevo { background: var(--black); }
+
+    .product-name {
+      font-family: var(--font-serif);
+      font-size: clamp(24px, 3vw, 36px);
+      font-weight: 700;
+      line-height: 1.2;
+      margin-bottom: 12px;
+    }
+    .product-price-row {
+      display: flex;
+      align-items: baseline;
+      gap: 12px;
+      margin-bottom: 24px;
+    }
+    .product-price {
+      font-size: 28px;
+      font-weight: 700;
+    }
+    .product-price-before {
+      font-size: 16px;
+      font-weight: 400;
+      color: var(--gray-500);
+      text-decoration: line-through;
+    }
+    .product-discount {
+      font-size: 12px;
+      font-weight: 700;
+      color: #c0392b;
+      background: #ffeaea;
+      padding: 3px 8px;
+    }
+    .product-desc {
+      font-size: 14px;
+      color: var(--gray-700);
+      line-height: 1.8;
+      border-top: 1px solid var(--gray-100);
+      border-bottom: 1px solid var(--gray-100);
+      padding: 20px 0;
+      margin-bottom: 24px;
+    }
+
+    /* ── Selectors ── */
+    .selector-label {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .selector-label span {
+      font-weight: 400;
+      font-size: 12px;
+      letter-spacing: 0;
+      color: var(--gray-500);
+    }
+    .talle-grid { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 24px; }
+    .talle-btn {
+      min-width: 48px;
+      padding: 9px 10px;
+      font-size: 12px;
+      font-weight: 600;
+      text-align: center;
+      border: 1.5px solid var(--gray-300);
+      color: var(--gray-700);
+      transition: all 0.15s;
+    }
+    .talle-btn:hover { border-color: var(--black); color: var(--black); }
+    .talle-btn.active { background: var(--black); color: var(--white); border-color: var(--black); }
+
+    .color-grid { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 28px; }
+    .color-btn {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 14px;
+      font-size: 12px;
+      font-weight: 600;
+      border: 1.5px solid var(--gray-300);
+      color: var(--gray-700);
+      transition: all 0.15s;
+    }
+    .color-btn:hover { border-color: var(--black); color: var(--black); }
+    .color-btn.active { border-color: var(--black); color: var(--black); background: var(--gray-50); }
+    .color-dot {
+      width: 14px; height: 14px;
+      border-radius: 50%;
+      border: 1px solid rgba(0,0,0,0.2);
+    }
+
+    /* ── Qty + CTA ── */
+    .qty-row {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      margin-bottom: 16px;
+    }
+    .qty-control {
+      display: flex;
+      align-items: center;
+      border: 1.5px solid var(--gray-300);
+    }
+    .qty-btn {
+      width: 40px; height: 44px;
+      font-size: 18px;
+      font-weight: 300;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--black);
+      transition: background 0.15s;
+    }
+    .qty-btn:hover { background: var(--gray-50); }
+    .qty-val {
+      width: 48px;
+      height: 44px;
+      text-align: center;
+      font-size: 14px;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-left: 1.5px solid var(--gray-300);
+      border-right: 1.5px solid var(--gray-300);
+    }
+    .add-cart-btn {
+      flex: 1;
+      padding: 14px 24px;
+      background: var(--black);
+      color: var(--white);
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      text-align: center;
+      transition: background 0.2s;
+    }
+    .add-cart-btn:hover { background: #333; }
+    .add-cart-btn:disabled { background: var(--gray-300); cursor: not-allowed; }
+
+    .toast {
+      position: fixed;
+      bottom: 100px;
+      left: 50%;
+      transform: translateX(-50%) translateY(20px);
+      background: var(--black);
+      color: var(--white);
+      padding: 14px 28px;
+      font-size: 13px;
+      font-weight: 600;
+      opacity: 0;
+      transition: all 0.3s;
+      z-index: 999;
+      pointer-events: none;
+    }
+    .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+    /* ── Features ── */
+    .product-features {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin-top: 20px;
+      padding-top: 20px;
+      border-top: 1px solid var(--gray-100);
+    }
+    .feature-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 12px;
+      color: var(--gray-700);
+    }
+    .feature-item span:first-child { font-size: 16px; }
+
+    /* ── Related ── */
+    .related-section {
+      padding: 64px 0;
+      border-top: 1px solid var(--gray-100);
+    }
+    .related-section .section-header { text-align: left; margin-bottom: 32px; }
+
+    /* ── Not found ── */
+    .not-found {
+      text-align: center;
+      padding: 120px 0;
+    }
+    .not-found h2 { font-family: var(--font-serif); font-size: 32px; margin-bottom: 12px; }
+    .not-found p  { color: var(--gray-500); margin-bottom: 28px; }
+
+    @media (max-width: 800px) {
+      .product-grid { grid-template-columns: 1fr; gap: 32px; }
+      .gallery { position: static; }
+    }
+    @media (max-width: 480px) {
+      .qty-row { flex-direction: column; align-items: stretch; }
+      .add-cart-btn { text-align: center; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ── Header ── -->
+  <header class="header">
+    <div class="container">
+      <div class="header-inner">
+        <a href="index.html" class="logo"><img src="assets/logo.png" alt="Emma"/></a>
+        <nav class="nav">
+          <a href="index.html">Inicio</a>
+          <a href="catalogo.html" class="active">Catálogo</a>
+          <a href="catalogo.html?cat=mujer">Mujer</a>
+          <a href="catalogo.html?cat=hombre">Hombre</a>
+          <a href="catalogo.html?cat=maquillaje">Maquillaje</a>
+          <a href="catalogo.html?sale=1" class="sale">Sale</a>
+        </nav>
+        <div class="header-actions">
+          <a href="carrito.html" class="cart-btn">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 01-8 0"/></svg>
+            Carrito <span class="cart-badge" id="cart-count">0</span>
+          </a>
+          <button class="hamburger" id="hamburger-btn"><span></span><span></span><span></span></button>
+        </div>
+      </div>
+    </div>
+    <nav class="mobile-nav" id="mobile-nav">
+      <a href="index.html">Inicio</a>
+      <a href="catalogo.html">Catálogo</a>
+      <a href="catalogo.html?cat=mujer">Mujer</a>
+      <a href="catalogo.html?cat=hombre">Hombre</a>
+      <a href="catalogo.html?cat=maquillaje">Maquillaje</a>
+      <a href="catalogo.html?sale=1" class="sale">Sale</a>
+    </nav>
+  </header>
+
+  <div id="app"><!-- cargado por JS --></div>
+
+  <!-- Toast -->
+  <div class="toast" id="toast"></div>
+
+  <!-- WhatsApp -->
+  <a href="https://wa.me/5492944486963" class="whatsapp-float" target="_blank" rel="noopener" aria-label="WhatsApp">
+    <svg width="26" height="26" viewBox="0 0 24 24" fill="white"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z"/></svg>
+  </a>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+  <script src="js/supabase.js"></script>
+  <script src="js/data.js"></script>
+  <script>
+    const app = document.getElementById('app');
+
+    // Color dot map
+    const colorMap = {
+      'Negro':'#1a1a1a','Gris':'#9e9e9e','Blanco':'#ffffff','Beige':'#d4b99a',
+      'Azul marino':'#1a2a4a','Verde militar':'#4a5240','Verde':'#3a7a3a',
+      'Rojo':'#c0392b','Rosa':'#e91e8c'
+    };
+
+    let selTalle = '', selColor = '', qty = 1, currentProduct = null;
+
+    // ── Handlers ──────────────────────────────────────
+    function setImg(src, el) {
+      document.getElementById('main-img').src = src;
+      document.querySelectorAll('.gallery-thumb').forEach(t => t.classList.remove('active'));
+      el.classList.add('active');
+    }
+
+    function selectTalle(t, el) {
+      selTalle = t;
+      document.querySelectorAll('.talle-btn').forEach(b => b.classList.remove('active'));
+      el.classList.add('active');
+      document.getElementById('talle-selected').textContent = t;
+    }
+
+    function selectColor(c, el) {
+      selColor = c;
+      document.querySelectorAll('.color-btn').forEach(b => b.classList.remove('active'));
+      el.classList.add('active');
+      document.getElementById('color-selected').textContent = c;
+    }
+
+    function changeQty(d) {
+      qty = Math.max(1, qty + d);
+      document.getElementById('qty-val').textContent = qty;
+    }
+
+    function addToCart() {
+      if (!selTalle) { showToast('⚠️ Seleccioná un talle'); return; }
+      if (!selColor)  { showToast('⚠️ Seleccioná un color'); return; }
+      agregarAlCarrito({
+        id:     currentProduct.id,
+        nombre: currentProduct.nombre,
+        precio: currentProduct.precio,
+        imagen: currentProduct.imagenes[0],
+        talle:  selTalle,
+        color:  selColor,
+        qty
+      });
+      showToast(`✓ ${currentProduct.nombre} agregado al carrito`);
+      actualizarBadge();
+    }
+
+    function showToast(msg) {
+      const t = document.getElementById('toast');
+      t.textContent = msg;
+      t.classList.add('show');
+      setTimeout(() => t.classList.remove('show'), 2800);
+    }
+
+    // Header
+    document.getElementById('hamburger-btn').addEventListener('click', () => {
+      document.getElementById('mobile-nav').classList.toggle('open');
+    });
+
+    // ── Init ──────────────────────────────────────────
+    actualizarBadge();
+
+    (async function init() {
+      await loadProductos();
+
+      const id = new URLSearchParams(location.search).get('id');
+      const p  = getProductoById(id);
+      currentProduct = p;
+
+      if (!p) {
+        app.innerHTML = `
+          <div class="container">
+            <div class="not-found">
+              <h2>Producto no encontrado</h2>
+              <p>El producto que buscás no existe o fue eliminado.</p>
+              <a href="catalogo.html" class="btn btn-dark">Ver catálogo</a>
+            </div>
+          </div>`;
+        return;
+      }
+
+      document.title = `${p.nombre} — Emma`;
+
+      const descuento = p.precioAntes
+        ? Math.round((1 - p.precio / p.precioAntes) * 100)
+        : 0;
+
+      app.innerHTML = `
+        <div class="container">
+          <div class="breadcrumb" style="display:flex;align-items:center;gap:8px;font-size:11px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:var(--gray-500);padding:24px 0 0;">
+            <a href="index.html" style="color:var(--gray-500)">Inicio</a> /
+            <a href="catalogo.html" style="color:var(--gray-500)">Catálogo</a> /
+            <span style="color:var(--black)">${p.nombre}</span>
+          </div>
+
+          <div class="product-detail">
+            <div class="product-grid">
+
+              <!-- Gallery -->
+              <div class="gallery">
+                <div class="gallery-main">
+                  <img id="main-img" src="${p.imagenes[0]}" alt="${p.nombre}"/>
+                </div>
+                ${p.imagenes.length > 1 ? `
+                <div class="gallery-thumbs">
+                  ${p.imagenes.map((img, i) => `
+                    <div class="gallery-thumb ${i===0?'active':''}" onclick="setImg('${img}', this)">
+                      <img src="${img}" alt="Vista ${i+1}" loading="lazy"/>
+                    </div>
+                  `).join('')}
+                </div>` : ''}
+              </div>
+
+              <!-- Info -->
+              <div class="product-info">
+                <div class="product-tags">
+                  ${p.nuevo ? '<span class="product-tag nuevo">Nuevo</span>' : ''}
+                  ${p.sale  ? '<span class="product-tag sale">Oferta</span>' : ''}
+                </div>
+
+                <h1 class="product-name">${p.nombre}</h1>
+
+                <div class="product-price-row">
+                  ${p.precioAntes ? `<span class="product-price-before">${formatPrecio(p.precioAntes)}</span>` : ''}
+                  <span class="product-price">${formatPrecio(p.precio)}</span>
+                  ${descuento ? `<span class="product-discount">-${descuento}%</span>` : ''}
+                </div>
+
+                <p class="product-desc">${p.descripcion}</p>
+
+                <p class="selector-label">
+                  Talle <span id="talle-selected">Seleccioná un talle</span>
+                </p>
+                <div class="talle-grid" id="talle-grid">
+                  ${p.talles.map(t => `
+                    <button class="talle-btn" data-talle="${t}" onclick="selectTalle('${t}', this)">${t}</button>
+                  `).join('')}
+                </div>
+
+                <p class="selector-label">
+                  Color <span id="color-selected">Seleccioná un color</span>
+                </p>
+                <div class="color-grid" id="color-grid">
+                  ${p.colores.map(c => `
+                    <button class="color-btn" data-color="${c}" onclick="selectColor('${c}', this)">
+                      <span class="color-dot" style="background:${colorMap[c]||'#ccc'}"></span>
+                      ${c}
+                    </button>
+                  `).join('')}
+                </div>
+
+                <div class="qty-row">
+                  <div class="qty-control">
+                    <button class="qty-btn" onclick="changeQty(-1)">−</button>
+                    <span class="qty-val" id="qty-val">1</span>
+                    <button class="qty-btn" onclick="changeQty(1)">+</button>
+                  </div>
+                  <button class="add-cart-btn" id="add-btn" onclick="addToCart()">
+                    Agregar al carrito
+                  </button>
+                </div>
+
+                <a href="carrito.html" style="display:block;text-align:center;font-size:11px;color:var(--gray-500);margin-top:8px;letter-spacing:0.5px;">
+                  Ver carrito →
+                </a>
+
+                <div class="product-features">
+                  <div class="feature-item"><span>🚚</span><span>Envíos a todo el país</span></div>
+                  <div class="feature-item"><span>💳</span><span>Pagá con Mercado Pago (coordinamos por WhatsApp)</span></div>
+                  <div class="feature-item"><span>📦</span><span>Consultá disponibilidad de stock antes de pagar</span></div>
+                </div>
+              </div>
+
+            </div>
+          </div>
+        </div>
+
+        <!-- Related -->
+        <div class="container">
+          <div class="related-section">
+            <div class="section-header">
+              <span class="section-tag">También te puede gustar</span>
+              <h2 class="section-title">Productos relacionados</h2>
+            </div>
+            <div class="products-row" id="related-grid"></div>
+          </div>
+        </div>
+      `;
+
+      // Related products
+      const related = PRODUCTOS
+        .filter(r => r.id !== p.id && r.categoria === p.categoria)
+        .slice(0, 4);
+
+      const rGrid = document.getElementById('related-grid');
+      if (related.length) {
+        rGrid.innerHTML = related.map(r => `
+          <a href="producto.html?id=${r.id}" class="product-card">
+            <div class="product-card-image">
+              <img src="${r.imagenes[0]}" alt="${r.nombre}" loading="lazy"/>
+              ${r.nuevo ? '<span class="product-card-badge">Nuevo</span>' : ''}
+              <span class="product-card-quick">Ver producto</span>
+            </div>
+            <p class="product-card-name">${r.nombre}</p>
+            <p class="product-card-price">
+              ${r.precioAntes ? `<span class="old-price">${formatPrecio(r.precioAntes)}</span>` : ''}
+              ${formatPrecio(r.precio)}
+            </p>
+          </a>
+        `).join('');
+      } else {
+        rGrid.innerHTML = `<p style="color:var(--gray-500);font-size:13px;">No hay más productos en esta categoría.</p>`;
+      }
+    })();
+  </script>
+</body>
+</html>

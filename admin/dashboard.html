@@ -1,0 +1,965 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Dashboard — Emma Admin</title>
+  <link rel="stylesheet" href="../css/styles.css"/>
+  <style>
+    * { box-sizing: border-box; }
+    body { background: #f4f4f6; min-height: 100vh; }
+
+    /* ── Admin Header ── */
+    .admin-header {
+      background: var(--black);
+      color: var(--white);
+      padding: 0 24px;
+      height: 60px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+    .admin-header-left {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+    .admin-logo { height: 30px; filter: brightness(0) invert(1); }
+    .admin-badge {
+      font-size: 9px;
+      font-weight: 700;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      background: rgba(255,255,255,0.15);
+      padding: 3px 8px;
+      color: rgba(255,255,255,0.7);
+    }
+    .admin-header-right {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+    .admin-view-btn {
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.5px;
+      color: rgba(255,255,255,0.65);
+      border: 1px solid rgba(255,255,255,0.2);
+      padding: 6px 12px;
+      transition: all 0.2s;
+    }
+    .admin-view-btn:hover { color: var(--white); border-color: rgba(255,255,255,0.5); }
+    .logout-btn {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+      color: rgba(255,255,255,0.5);
+      transition: color 0.2s;
+    }
+    .logout-btn:hover { color: var(--white); }
+
+    /* ── Layout ── */
+    .admin-layout {
+      display: grid;
+      grid-template-columns: 220px 1fr;
+      min-height: calc(100vh - 60px);
+    }
+
+    /* ── Sidebar ── */
+    .admin-sidebar {
+      background: var(--white);
+      border-right: 1px solid #e0e0e6;
+      padding: 24px 0;
+    }
+    .sidebar-menu-title {
+      font-size: 9px;
+      font-weight: 700;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: #aaa;
+      padding: 0 20px;
+      margin-bottom: 8px;
+    }
+    .sidebar-link {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 11px 20px;
+      font-size: 13px;
+      font-weight: 600;
+      color: #555;
+      transition: all 0.15s;
+      border-left: 3px solid transparent;
+    }
+    .sidebar-link:hover { background: var(--gray-50); color: var(--black); }
+    .sidebar-link.active { background: #f0f0f4; color: var(--black); border-left-color: var(--black); }
+    .sidebar-link .icon { font-size: 16px; width: 20px; text-align: center; }
+
+    .sidebar-badge {
+      margin-left: auto;
+      background: #c0392b;
+      color: var(--white);
+      font-size: 10px;
+      font-weight: 700;
+      padding: 2px 7px;
+      border-radius: 10px;
+    }
+
+    /* ── Main ── */
+    .admin-main { padding: 32px; }
+
+    .page-title {
+      font-family: var(--font-serif);
+      font-size: 26px;
+      font-weight: 700;
+      margin-bottom: 8px;
+    }
+    .page-subtitle { font-size: 13px; color: #888; margin-bottom: 28px; }
+
+    /* ── Stats ── */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 16px;
+      margin-bottom: 32px;
+    }
+    .stat-card {
+      background: var(--white);
+      padding: 20px 22px;
+      border: 1px solid #e8e8ee;
+    }
+    .stat-label {
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      color: #aaa;
+      margin-bottom: 8px;
+    }
+    .stat-value {
+      font-size: 26px;
+      font-weight: 700;
+      color: var(--black);
+      line-height: 1;
+      margin-bottom: 4px;
+    }
+    .stat-hint { font-size: 12px; color: #888; }
+
+    /* ── Tabs ── */
+    .tabs {
+      display: flex;
+      border-bottom: 2px solid #e0e0e6;
+      margin-bottom: 24px;
+      gap: 0;
+    }
+    .tab-btn {
+      padding: 12px 20px;
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 0.8px;
+      text-transform: uppercase;
+      color: #888;
+      border-bottom: 2px solid transparent;
+      margin-bottom: -2px;
+      transition: all 0.2s;
+    }
+    .tab-btn:hover { color: var(--black); }
+    .tab-btn.active { color: var(--black); border-bottom-color: var(--black); }
+
+    .tab-panel { display: none; }
+    .tab-panel.active { display: block; }
+
+    /* ── Toolbar ── */
+    .toolbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 16px;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+    .search-input {
+      padding: 9px 14px;
+      font-family: var(--font-sans);
+      font-size: 13px;
+      border: 1.5px solid #ddd;
+      outline: none;
+      min-width: 240px;
+      transition: border-color 0.2s;
+    }
+    .search-input:focus { border-color: var(--black); }
+
+    /* ── Table ── */
+    .data-table {
+      width: 100%;
+      background: var(--white);
+      border: 1px solid #e8e8ee;
+      border-collapse: collapse;
+    }
+    .data-table th {
+      background: #f8f8fa;
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      color: #888;
+      padding: 12px 16px;
+      text-align: left;
+      border-bottom: 1px solid #e8e8ee;
+    }
+    .data-table td {
+      padding: 14px 16px;
+      font-size: 13px;
+      border-bottom: 1px solid #f0f0f4;
+      vertical-align: middle;
+    }
+    .data-table tr:last-child td { border-bottom: none; }
+    .data-table tr:hover td { background: #fafafa; }
+
+    .product-thumb {
+      width: 44px; height: 56px;
+      object-fit: cover;
+      background: var(--gray-100);
+      display: block;
+    }
+
+    /* Status badges */
+    .badge {
+      display: inline-block;
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+      padding: 4px 10px;
+    }
+    .badge-pending   { background: #fff3cd; color: #856404; }
+    .badge-confirmed { background: #d1e7dd; color: #0a5526; }
+    .badge-shipped   { background: #cfe2ff; color: #084298; }
+    .badge-done      { background: #d3d3d3; color: #444; }
+    .badge-cancelled { background: #f8d7da; color: #842029; }
+    .badge-new       { background: #e2f0ff; color: #0066cc; }
+    .badge-sale      { background: #fde8e8; color: #c0392b; }
+
+    /* Action buttons */
+    .action-btn {
+      font-size: 12px;
+      font-weight: 600;
+      padding: 6px 12px;
+      border: 1.5px solid;
+      transition: all 0.15s;
+    }
+    .action-btn-primary { border-color: var(--black); color: var(--black); }
+    .action-btn-primary:hover { background: var(--black); color: var(--white); }
+    .action-btn-danger  { border-color: #c0392b; color: #c0392b; }
+    .action-btn-danger:hover  { background: #c0392b; color: var(--white); }
+    .action-btn-ghost   { border-color: #ddd; color: #888; }
+    .action-btn-ghost:hover   { border-color: var(--black); color: var(--black); }
+
+    /* ── Modal ── */
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.5);
+      z-index: 500;
+      align-items: flex-start;
+      justify-content: center;
+      padding: 40px 16px;
+      overflow-y: auto;
+    }
+    .modal-overlay.open { display: flex; }
+    .modal {
+      background: var(--white);
+      width: 100%;
+      max-width: 640px;
+      padding: 0;
+      position: relative;
+    }
+    .modal-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 20px 24px;
+      border-bottom: 1px solid #e8e8ee;
+    }
+    .modal-header h3 {
+      font-size: 16px;
+      font-weight: 700;
+    }
+    .modal-close {
+      font-size: 22px;
+      color: #888;
+      line-height: 1;
+      padding: 0 4px;
+    }
+    .modal-close:hover { color: var(--black); }
+    .modal-body { padding: 24px; }
+    .modal-footer {
+      display: flex;
+      gap: 12px;
+      justify-content: flex-end;
+      padding: 16px 24px;
+      border-top: 1px solid #e8e8ee;
+    }
+
+    /* Form inside modal */
+    .mform-group { margin-bottom: 16px; }
+    .mform-label {
+      display: block;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      color: #666;
+      margin-bottom: 6px;
+    }
+    .mform-input, .mform-select, .mform-textarea {
+      width: 100%;
+      padding: 10px 12px;
+      font-family: var(--font-sans);
+      font-size: 13px;
+      border: 1.5px solid #ddd;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    .mform-input:focus, .mform-select:focus, .mform-textarea:focus { border-color: var(--black); }
+    .mform-textarea { resize: vertical; min-height: 72px; }
+    .mform-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+    .mform-hint { font-size: 11px; color: #aaa; margin-top: 4px; }
+
+    /* Checkbox toggle */
+    .toggle-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 0;
+      border-bottom: 1px solid #f0f0f4;
+    }
+    .toggle-row label { font-size: 13px; font-weight: 500; }
+    .toggle {
+      width: 40px; height: 22px;
+      background: #ccc;
+      border-radius: 11px;
+      position: relative;
+      cursor: pointer;
+      transition: background 0.2s;
+      display: inline-block;
+      vertical-align: middle;
+    }
+    .toggle input { display: none; }
+    .toggle input:checked + .toggle-thumb { left: 21px; }
+    .toggle:has(input:checked) { background: var(--black); }
+    .toggle-thumb {
+      position: absolute;
+      top: 3px; left: 3px;
+      width: 16px; height: 16px;
+      background: var(--white);
+      border-radius: 50%;
+      transition: left 0.2s;
+      pointer-events: none;
+    }
+
+    /* Order detail */
+    .order-detail-header {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+    .order-detail-field {
+      background: #f8f8fa;
+      padding: 12px 14px;
+    }
+    .order-detail-field small {
+      display: block;
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      color: #aaa;
+      margin-bottom: 4px;
+    }
+    .order-detail-field span { font-size: 13px; font-weight: 600; }
+
+    .order-items-list { margin-top: 12px; }
+    .order-item-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 10px 0;
+      border-bottom: 1px solid #f0f0f4;
+      font-size: 13px;
+    }
+    .order-item-row img {
+      width: 44px; height: 56px;
+      object-fit: cover;
+      background: #f0f0f4;
+    }
+
+    /* Empty table */
+    .table-empty {
+      text-align: center;
+      padding: 60px 0;
+      color: #aaa;
+    }
+    .table-empty .e-icon { font-size: 36px; margin-bottom: 10px; }
+    .table-empty p { font-size: 14px; }
+
+    /* Responsive */
+    @media (max-width: 1024px) {
+      .stats-grid { grid-template-columns: repeat(2, 1fr); }
+    }
+    @media (max-width: 768px) {
+      .admin-layout { grid-template-columns: 1fr; }
+      .admin-sidebar { display: none; }
+      .admin-main { padding: 16px; }
+      .stats-grid { grid-template-columns: repeat(2, 1fr); }
+      .data-table { display: block; overflow-x: auto; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ── Admin Header ── -->
+  <header class="admin-header">
+    <div class="admin-header-left">
+      <img src="../assets/logo.png" alt="Emma" class="admin-logo"/>
+      <span class="admin-badge">Admin</span>
+    </div>
+    <div class="admin-header-right">
+      <a href="../index.html" class="admin-view-btn" target="_blank">Ver tienda →</a>
+      <button class="logout-btn" onclick="logout()">Cerrar sesión</button>
+    </div>
+  </header>
+
+  <div class="admin-layout">
+
+    <!-- ── Sidebar ── -->
+    <aside class="admin-sidebar">
+      <p class="sidebar-menu-title" style="margin-top:8px;">Menú</p>
+      <button class="sidebar-link active" onclick="switchTab('pedidos', this)">
+        <span class="icon">📦</span> Pedidos
+        <span class="sidebar-badge" id="pending-badge">0</span>
+      </button>
+      <button class="sidebar-link" onclick="switchTab('productos', this)">
+        <span class="icon">👕</span> Productos
+      </button>
+      <div style="margin:20px 0 8px;border-top:1px solid #f0f0f4;"></div>
+      <p class="sidebar-menu-title">Accesos</p>
+      <a href="../index.html" class="sidebar-link" target="_blank">
+        <span class="icon">🏠</span> Tienda
+      </a>
+      <a href="../catalogo.html" class="sidebar-link" target="_blank">
+        <span class="icon">🛍️</span> Catálogo
+      </a>
+    </aside>
+
+    <!-- ── Main ── -->
+    <main class="admin-main">
+
+      <!-- Stats -->
+      <div class="stats-grid" id="stats-grid"></div>
+
+      <!-- Tabs -->
+      <div class="tabs">
+        <button class="tab-btn active" id="tab-btn-pedidos"   onclick="switchTab('pedidos', this)">Pedidos</button>
+        <button class="tab-btn"        id="tab-btn-productos" onclick="switchTab('productos', this)">Productos</button>
+      </div>
+
+      <!-- ── PEDIDOS ── -->
+      <div class="tab-panel active" id="panel-pedidos">
+        <div class="toolbar">
+          <input class="search-input" type="search" id="search-pedidos" placeholder="Buscar por nombre o #pedido..." oninput="filterPedidos()"/>
+          <select class="search-input" style="min-width:auto;" id="filter-estado" onchange="filterPedidos()">
+            <option value="">Todos los estados</option>
+            <option value="pendiente">Pendientes</option>
+            <option value="confirmado">Confirmados</option>
+            <option value="enviado">Enviados</option>
+            <option value="entregado">Entregados</option>
+            <option value="cancelado">Cancelados</option>
+          </select>
+        </div>
+        <table class="data-table" id="orders-table">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Fecha</th>
+              <th>Cliente</th>
+              <th>WhatsApp</th>
+              <th>Localidad</th>
+              <th>Total</th>
+              <th>Estado</th>
+              <th>Acciones</th>
+            </tr>
+          </thead>
+          <tbody id="orders-body"></tbody>
+        </table>
+      </div>
+
+      <!-- ── PRODUCTOS ── -->
+      <div class="tab-panel" id="panel-productos">
+        <div class="toolbar">
+          <input class="search-input" type="search" id="search-productos" placeholder="Buscar producto..." oninput="filterProductos()"/>
+          <button class="btn btn-dark" style="padding:10px 20px;" onclick="openProductModal()">
+            + Nuevo producto
+          </button>
+        </div>
+        <table class="data-table" id="products-table">
+          <thead>
+            <tr>
+              <th></th>
+              <th>Nombre</th>
+              <th>Categoría</th>
+              <th>Precio</th>
+              <th>Talles</th>
+              <th>Colores</th>
+              <th>Estado</th>
+              <th>Acciones</th>
+            </tr>
+          </thead>
+          <tbody id="products-body"></tbody>
+        </table>
+      </div>
+
+    </main>
+  </div>
+
+  <!-- ── Modal Pedido ── -->
+  <div class="modal-overlay" id="order-modal">
+    <div class="modal">
+      <div class="modal-header">
+        <h3 id="order-modal-title">Detalle del pedido</h3>
+        <button class="modal-close" onclick="closeModal('order-modal')">×</button>
+      </div>
+      <div class="modal-body" id="order-modal-body"></div>
+      <div class="modal-footer">
+        <select class="mform-select" style="min-width:180px;" id="order-status-select">
+          <option value="pendiente">Pendiente</option>
+          <option value="confirmado">Confirmado</option>
+          <option value="enviado">Enviado</option>
+          <option value="entregado">Entregado</option>
+          <option value="cancelado">Cancelado</option>
+        </select>
+        <button class="btn btn-dark" style="padding:10px 20px;" onclick="saveOrderStatus()">Guardar estado</button>
+        <button class="action-btn action-btn-ghost" onclick="closeModal('order-modal')">Cerrar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Modal Producto ── -->
+  <div class="modal-overlay" id="product-modal">
+    <div class="modal">
+      <div class="modal-header">
+        <h3 id="product-modal-title">Nuevo producto</h3>
+        <button class="modal-close" onclick="closeModal('product-modal')">×</button>
+      </div>
+      <div class="modal-body">
+        <form id="product-form">
+          <div class="mform-row">
+            <div class="mform-group">
+              <label class="mform-label">Nombre *</label>
+              <input class="mform-input" type="text" id="p-nombre" placeholder="Ej: Jogger Oversize Gris" required/>
+            </div>
+            <div class="mform-group">
+              <label class="mform-label">Categoría *</label>
+              <select class="mform-select" id="p-categoria">
+                <option value="buzos">Buzos y Suéteres</option>
+                <option value="pantalones">Pantalones y Jeans</option>
+                <option value="camperas">Camperas y Chalecos</option>
+                <option value="maquillaje">Maquillaje y Belleza</option>
+              </select>
+            </div>
+          </div>
+          <div class="mform-row">
+            <div class="mform-group">
+              <label class="mform-label">Género *</label>
+              <select class="mform-select" id="p-genero">
+                <option value="mujer">Mujer</option>
+                <option value="hombre">Hombre</option>
+                <option value="unisex">Unisex</option>
+              </select>
+            </div>
+            <div class="mform-group">
+              <label class="mform-label">Precio (ARS) *</label>
+              <input class="mform-input" type="number" id="p-precio" placeholder="28000" min="0"/>
+            </div>
+          </div>
+          <div class="mform-group">
+            <label class="mform-label">Precio anterior (dejar vacío si no hay oferta)</label>
+            <input class="mform-input" type="number" id="p-precio-antes" placeholder="35000" min="0"/>
+          </div>
+          <div class="mform-group">
+            <label class="mform-label">Descripción</label>
+            <textarea class="mform-textarea" id="p-descripcion" placeholder="Descripción del producto..."></textarea>
+          </div>
+          <div class="mform-row">
+            <div class="mform-group">
+              <label class="mform-label">Talles disponibles</label>
+              <input class="mform-input" type="text" id="p-talles" placeholder="XS, S, M, L, XL"/>
+              <p class="mform-hint">Separados por coma</p>
+            </div>
+            <div class="mform-group">
+              <label class="mform-label">Colores disponibles</label>
+              <input class="mform-input" type="text" id="p-colores" placeholder="Negro, Gris, Blanco"/>
+              <p class="mform-hint">Separados por coma</p>
+            </div>
+          </div>
+          <div class="mform-group">
+            <label class="mform-label">URL de imagen principal *</label>
+            <input class="mform-input" type="text" id="p-imagen" placeholder="../product-images/foto.jpg"/>
+            <p class="mform-hint">Ruta relativa o URL de imagen</p>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:0;">
+            <div class="toggle-row">
+              <label for="p-nuevo">Marcar como Nuevo</label>
+              <label class="toggle">
+                <input type="checkbox" id="p-nuevo"/>
+                <span class="toggle-thumb"></span>
+              </label>
+            </div>
+            <div class="toggle-row">
+              <label for="p-sale">Marcar como Oferta</label>
+              <label class="toggle">
+                <input type="checkbox" id="p-sale"/>
+                <span class="toggle-thumb"></span>
+              </label>
+            </div>
+            <div class="toggle-row">
+              <label for="p-destacado">Mostrar en destacados</label>
+              <label class="toggle">
+                <input type="checkbox" id="p-destacado"/>
+                <span class="toggle-thumb"></span>
+              </label>
+            </div>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-dark" style="padding:10px 24px;" onclick="saveProduct()">Guardar producto</button>
+        <button class="action-btn action-btn-ghost" onclick="closeModal('product-modal')">Cancelar</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+  <script src="../js/supabase.js"></script>
+  <script src="../js/data.js"></script>
+  <script>
+    // ── Auth guard ─────────────────────────────────────
+    if (!adminLoggedIn()) location.href = 'login.html';
+
+    function logout() {
+      sessionStorage.removeItem('emma_admin');
+      location.href = 'login.html';
+    }
+
+    // ── State ──────────────────────────────────────────
+    let pedidosList    = [];
+    let currentOrderId = null;
+    let editingProductId = null;
+
+    // ── Stats ──────────────────────────────────────────
+    function renderStats() {
+      const pending  = pedidosList.filter(p => p.estado === 'pendiente').length;
+      const totalRev = pedidosList.filter(p => p.estado !== 'cancelado').reduce((s, p) => s + p.total, 0);
+      document.getElementById('stats-grid').innerHTML = `
+        <div class="stat-card">
+          <p class="stat-label">Pedidos totales</p>
+          <p class="stat-value">${pedidosList.length}</p>
+          <p class="stat-hint">Todos los tiempos</p>
+        </div>
+        <div class="stat-card">
+          <p class="stat-label">Pendientes</p>
+          <p class="stat-value" style="color:${pending ? '#c0392b' : '#2ecc71'}">${pending}</p>
+          <p class="stat-hint">Requieren atención</p>
+        </div>
+        <div class="stat-card">
+          <p class="stat-label">Productos</p>
+          <p class="stat-value">${PRODUCTOS.length}</p>
+          <p class="stat-hint">En el catálogo</p>
+        </div>
+        <div class="stat-card">
+          <p class="stat-label">Facturación</p>
+          <p class="stat-value" style="font-size:20px;">${formatPrecio(totalRev)}</p>
+          <p class="stat-hint">Pedidos confirmados</p>
+        </div>
+      `;
+      document.getElementById('pending-badge').textContent = pending || '';
+      document.getElementById('pending-badge').style.display = pending ? 'inline' : 'none';
+    }
+
+    // ── Tabs ───────────────────────────────────────────
+    function switchTab(name, btn) {
+      document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      document.querySelectorAll('.sidebar-link').forEach(b => b.classList.remove('active'));
+      document.getElementById('panel-' + name).classList.add('active');
+      const tabBtn = document.getElementById('tab-btn-' + name);
+      if (tabBtn) tabBtn.classList.add('active');
+      if (btn) btn.classList.add('active');
+    }
+
+    // ── PEDIDOS ────────────────────────────────────────
+    const estadoLabels = {
+      pendiente:  '<span class="badge badge-pending">Pendiente</span>',
+      confirmado: '<span class="badge badge-confirmed">Confirmado</span>',
+      enviado:    '<span class="badge badge-shipped">Enviado</span>',
+      entregado:  '<span class="badge badge-done">Entregado</span>',
+      cancelado:  '<span class="badge badge-cancelled">Cancelado</span>'
+    };
+
+    function renderPedidos(list) {
+      const tbody = document.getElementById('orders-body');
+      if (!list.length) {
+        tbody.innerHTML = `<tr><td colspan="8"><div class="table-empty"><div class="e-icon">📭</div><p>No hay pedidos todavía</p></div></td></tr>`;
+        return;
+      }
+      tbody.innerHTML = list.map(p => {
+        const fecha = new Date(p.created_at).toLocaleDateString('es-AR', { day:'2-digit', month:'2-digit', year:'2-digit', hour:'2-digit', minute:'2-digit' });
+        const ordId = String(p.id).padStart(6, '0');
+        return `<tr>
+          <td><strong>#${ordId}</strong></td>
+          <td style="font-size:12px;color:#888;">${fecha}</td>
+          <td><strong>${p.nombre}</strong></td>
+          <td>
+            <a href="https://wa.me/549${p.whatsapp.replace(/\D/g,'')}" target="_blank" style="color:#25d366;font-weight:600;font-size:12px;">
+              📱 ${p.whatsapp}
+            </a>
+          </td>
+          <td style="font-size:12px;">${p.localidad}${p.provincia ? ', ' + p.provincia : ''}</td>
+          <td><strong>${formatPrecio(p.total)}</strong></td>
+          <td>${estadoLabels[p.estado] || p.estado}</td>
+          <td>
+            <button class="action-btn action-btn-primary" style="font-size:11px;" onclick="openOrderModal(${p.id})">Ver</button>
+          </td>
+        </tr>`;
+      }).join('');
+    }
+
+    function filterPedidos() {
+      const q   = document.getElementById('search-pedidos').value.toLowerCase();
+      const est = document.getElementById('filter-estado').value;
+      let list  = [...pedidosList];
+      if (q)   list = list.filter(p => p.nombre.toLowerCase().includes(q) || String(p.id).includes(q));
+      if (est) list = list.filter(p => p.estado === est);
+      renderPedidos(list);
+    }
+
+    function openOrderModal(id) {
+      const p = pedidosList.find(o => o.id === id);
+      if (!p) return;
+      currentOrderId = id;
+      const ordId = String(p.id).padStart(6, '0');
+      const fecha = new Date(p.created_at).toLocaleDateString('es-AR', { weekday:'long', day:'numeric', month:'long', year:'numeric', hour:'2-digit', minute:'2-digit' });
+      const waMsg = `Hola ${p.nombre.split(' ')[0]}! 👋 Gracias por tu pedido #${ordId}. Estamos confirmando disponibilidad de stock. ¡Te avisamos a la brevedad!`;
+
+      document.getElementById('order-modal-title').textContent = `Pedido #${ordId}`;
+      document.getElementById('order-status-select').value = p.estado;
+      document.getElementById('order-modal-body').innerHTML = `
+        <div class="order-detail-header">
+          <div class="order-detail-field"><small>Fecha</small><span>${fecha}</span></div>
+          <div class="order-detail-field"><small>Estado</small><span>${estadoLabels[p.estado]}</span></div>
+          <div class="order-detail-field"><small>Cliente</small><span>${p.nombre}</span></div>
+          <div class="order-detail-field">
+            <small>WhatsApp</small>
+            <span>
+              <a href="https://wa.me/549${p.whatsapp.replace(/\D/g,'')}?text=${encodeURIComponent(waMsg)}" target="_blank" style="color:#25d366;font-weight:700;">
+                📱 ${p.whatsapp}
+              </a>
+            </span>
+          </div>
+          <div class="order-detail-field"><small>Dirección</small><span>${p.direccion}</span></div>
+          <div class="order-detail-field"><small>Localidad</small><span>${p.localidad}${p.provincia ? ', ' + p.provincia : ''}</span></div>
+          ${p.nota ? `<div class="order-detail-field" style="grid-column:1/-1"><small>Nota</small><span>${p.nota}</span></div>` : ''}
+        </div>
+
+        <p style="font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:#aaa;margin-bottom:10px;">Productos</p>
+        <div class="order-items-list">
+          ${p.items.map(item => `
+            <div class="order-item-row">
+              <img src="../${item.imagen}" alt="${item.nombre}" onerror="this.style.display='none'"/>
+              <div>
+                <p style="font-weight:600;">${item.nombre}</p>
+                <p style="font-size:11px;color:#888;">${item.talle} / ${item.color} ×${item.qty}</p>
+              </div>
+              <span style="margin-left:auto;font-weight:700;">${formatPrecio(item.precio * item.qty)}</span>
+            </div>
+          `).join('')}
+          <div style="display:flex;justify-content:space-between;font-weight:700;font-size:15px;padding-top:14px;margin-top:4px;border-top:2px solid var(--black);">
+            <span>Total</span><span>${formatPrecio(p.total)}</span>
+          </div>
+        </div>
+      `;
+      document.getElementById('order-modal').classList.add('open');
+    }
+
+    async function saveOrderStatus() {
+      const estado = document.getElementById('order-status-select').value;
+      try {
+        await db_actualizarEstadoPedido(currentOrderId, estado);
+        const idx = pedidosList.findIndex(p => p.id === currentOrderId);
+        if (idx > -1) pedidosList[idx].estado = estado;
+        closeModal('order-modal');
+        renderStats();
+        filterPedidos();
+      } catch (err) {
+        alert('Error al actualizar estado: ' + err.message);
+      }
+    }
+
+    // ── PRODUCTOS ──────────────────────────────────────
+    const catNames = { buzos:'Buzos y Suéteres', pantalones:'Pantalones y Jeans', camperas:'Camperas y Chalecos', maquillaje:'Maquillaje' };
+
+    function renderProductos(list) {
+      const tbody = document.getElementById('products-body');
+      if (!list.length) {
+        tbody.innerHTML = `<tr><td colspan="8"><div class="table-empty"><div class="e-icon">👕</div><p>No hay productos</p></div></td></tr>`;
+        return;
+      }
+      tbody.innerHTML = list.map(p => `
+        <tr>
+          <td>
+            <img class="product-thumb" src="../${p.imagenes[0]}" alt="${p.nombre}" onerror="this.src='data:image/svg+xml,<svg xmlns=\\'http://www.w3.org/2000/svg\\' width=\\'44\\' height=\\'56\\'><rect fill=\\'%23eee\\' width=\\'44\\' height=\\'56\\'/></svg>'"/>
+          </td>
+          <td><strong>${p.nombre}</strong></td>
+          <td style="font-size:12px;color:#888;">${catNames[p.categoria] || p.categoria}</td>
+          <td>
+            <strong>${formatPrecio(p.precio)}</strong>
+            ${p.precioAntes ? `<br><span style="font-size:11px;color:#888;text-decoration:line-through;">${formatPrecio(p.precioAntes)}</span>` : ''}
+          </td>
+          <td style="font-size:12px;">${(p.talles || []).join(', ')}</td>
+          <td style="font-size:12px;">${(p.colores || []).join(', ')}</td>
+          <td>
+            ${p.nuevo    ? '<span class="badge badge-new" style="display:block;margin-bottom:3px;">Nuevo</span>' : ''}
+            ${p.sale     ? '<span class="badge badge-sale" style="display:block;margin-bottom:3px;">Oferta</span>' : ''}
+            ${p.destacado? '<span class="badge" style="background:#f0f4e8;color:#5a7a2a;display:block;">Destacado</span>' : ''}
+          </td>
+          <td>
+            <div style="display:flex;gap:6px;flex-wrap:wrap;">
+              <a href="../producto.html?id=${p.id}" target="_blank" class="action-btn action-btn-ghost" style="font-size:11px;">Ver</a>
+              <button class="action-btn action-btn-primary" style="font-size:11px;" onclick="editProduct(${p.id})">Editar</button>
+              <button class="action-btn action-btn-danger" style="font-size:11px;" onclick="deleteProduct(${p.id})">Eliminar</button>
+            </div>
+          </td>
+        </tr>
+      `).join('');
+    }
+
+    function filterProductos() {
+      const q    = document.getElementById('search-productos').value.toLowerCase();
+      const list = q ? PRODUCTOS.filter(p => p.nombre.toLowerCase().includes(q)) : PRODUCTOS;
+      renderProductos(list);
+    }
+
+    function openProductModal(id) {
+      editingProductId = id || null;
+      document.getElementById('product-modal-title').textContent = id ? 'Editar producto' : 'Nuevo producto';
+
+      if (id) {
+        const p = PRODUCTOS.find(x => x.id === id);
+        if (!p) return;
+        document.getElementById('p-nombre').value       = p.nombre;
+        document.getElementById('p-categoria').value    = p.categoria;
+        document.getElementById('p-genero').value       = p.genero;
+        document.getElementById('p-precio').value       = p.precio;
+        document.getElementById('p-precio-antes').value = p.precioAntes || '';
+        document.getElementById('p-descripcion').value  = p.descripcion || '';
+        document.getElementById('p-talles').value       = (p.talles  || []).join(', ');
+        document.getElementById('p-colores').value      = (p.colores || []).join(', ');
+        document.getElementById('p-imagen').value       = p.imagenes ? p.imagenes[0] : '';
+        document.getElementById('p-nuevo').checked      = !!p.nuevo;
+        document.getElementById('p-sale').checked       = !!p.sale;
+        document.getElementById('p-destacado').checked  = !!p.destacado;
+      } else {
+        document.getElementById('product-form').reset();
+      }
+      document.getElementById('product-modal').classList.add('open');
+    }
+
+    function editProduct(id) { openProductModal(id); }
+
+    async function saveProduct() {
+      const nombre = document.getElementById('p-nombre').value.trim();
+      const precio = Number(document.getElementById('p-precio').value);
+      const imagen = document.getElementById('p-imagen').value.trim();
+      if (!nombre || !precio || !imagen) { alert('Completá los campos obligatorios (*)'); return; }
+
+      const prod = {
+        nombre,
+        categoria:   document.getElementById('p-categoria').value,
+        genero:      document.getElementById('p-genero').value,
+        precio,
+        precioAntes: Number(document.getElementById('p-precio-antes').value) || null,
+        descripcion: document.getElementById('p-descripcion').value.trim(),
+        talles:      document.getElementById('p-talles').value.split(',').map(s => s.trim()).filter(Boolean),
+        colores:     document.getElementById('p-colores').value.split(',').map(s => s.trim()).filter(Boolean),
+        imagenes:    [imagen],
+        nuevo:       document.getElementById('p-nuevo').checked,
+        sale:        document.getElementById('p-sale').checked,
+        destacado:   document.getElementById('p-destacado').checked
+      };
+
+      const saveBtn = document.querySelector('#product-modal .btn-dark');
+      saveBtn.disabled = true;
+      saveBtn.textContent = 'Guardando...';
+
+      try {
+        if (editingProductId) {
+          await db_updateProduct(editingProductId, prod);
+        } else {
+          await db_insertProduct(prod);
+        }
+        await loadProductos();
+        closeModal('product-modal');
+        filterProductos();
+        renderStats();
+      } catch (err) {
+        alert('Error al guardar el producto: ' + err.message);
+      } finally {
+        saveBtn.disabled = false;
+        saveBtn.textContent = 'Guardar producto';
+      }
+    }
+
+    async function deleteProduct(id) {
+      if (!confirm('¿Eliminar este producto? Esta acción no se puede deshacer.')) return;
+      try {
+        await db_deleteProduct(id);
+        await loadProductos();
+        filterProductos();
+        renderStats();
+      } catch (err) {
+        alert('Error al eliminar: ' + err.message);
+      }
+    }
+
+    // ── Modal helpers ──────────────────────────────────
+    function closeModal(id) {
+      document.getElementById(id).classList.remove('open');
+    }
+    document.querySelectorAll('.modal-overlay').forEach(m => {
+      m.addEventListener('click', e => { if (e.target === m) m.classList.remove('open'); });
+    });
+
+    // ── Init ───────────────────────────────────────────
+    (async function init() {
+      document.getElementById('orders-body').innerHTML =
+        `<tr><td colspan="8" style="text-align:center;padding:40px;color:#aaa;">Cargando pedidos...</td></tr>`;
+      document.getElementById('products-body').innerHTML =
+        `<tr><td colspan="8" style="text-align:center;padding:40px;color:#aaa;">Cargando productos...</td></tr>`;
+
+      [pedidosList] = await Promise.all([
+        db_getPedidos(),
+        loadProductos()
+      ]);
+
+      renderStats();
+      filterPedidos();
+      renderProductos(PRODUCTOS);
+    })();
+  </script>
+</body>
+</html>

@@ -1,0 +1,492 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Catálogo — Emma Moda a tu Alcance</title>
+  <link rel="stylesheet" href="css/styles.css"/>
+  <style>
+    /* ── Page header ── */
+    .page-hero {
+      background: var(--gray-50);
+      padding: 48px 0 36px;
+      border-bottom: 1px solid var(--gray-100);
+      text-align: center;
+    }
+    .page-hero h1 {
+      font-family: var(--font-serif);
+      font-size: clamp(28px, 4vw, 44px);
+      font-weight: 700;
+      margin-bottom: 8px;
+    }
+    .page-hero p { font-size: 13px; color: var(--gray-500); }
+    .breadcrumb {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      color: var(--gray-500);
+      margin-bottom: 16px;
+    }
+    .breadcrumb a { color: var(--gray-500); }
+    .breadcrumb a:hover { color: var(--black); }
+    .breadcrumb span { color: var(--black); }
+
+    /* ── Layout ── */
+    .catalog-layout {
+      display: grid;
+      grid-template-columns: 240px 1fr;
+      gap: 40px;
+      padding: 48px 0 80px;
+      align-items: start;
+    }
+
+    /* ── Sidebar ── */
+    .sidebar { position: sticky; top: 86px; }
+    .sidebar-section { border-bottom: 1px solid var(--gray-100); padding-bottom: 24px; margin-bottom: 24px; }
+    .sidebar-section:last-child { border-bottom: none; }
+    .sidebar-title {
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: var(--gray-500);
+      margin-bottom: 14px;
+    }
+    .filter-list { display: flex; flex-direction: column; gap: 6px; }
+    .filter-btn {
+      text-align: left;
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--gray-700);
+      padding: 6px 10px;
+      border-radius: 2px;
+      transition: all 0.15s;
+      border: 1px solid transparent;
+    }
+    .filter-btn:hover { color: var(--black); background: var(--gray-50); }
+    .filter-btn.active { color: var(--black); font-weight: 700; border-color: var(--black); }
+
+    .size-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+    .size-btn {
+      padding: 8px 4px;
+      font-size: 12px;
+      font-weight: 600;
+      text-align: center;
+      border: 1.5px solid var(--gray-300);
+      color: var(--gray-700);
+      transition: all 0.15s;
+    }
+    .size-btn:hover { border-color: var(--black); color: var(--black); }
+    .size-btn.active { background: var(--black); color: var(--white); border-color: var(--black); }
+
+    /* ── Catalog main ── */
+    .catalog-toolbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 24px;
+      padding-bottom: 16px;
+      border-bottom: 1px solid var(--gray-100);
+    }
+    .catalog-count { font-size: 13px; color: var(--gray-500); }
+    .catalog-count strong { color: var(--black); font-weight: 700; }
+    .sort-select {
+      font-family: var(--font-sans);
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--black);
+      border: 1.5px solid var(--gray-300);
+      padding: 8px 12px;
+      background: var(--white);
+      cursor: pointer;
+    }
+
+    /* ── Product grid ── */
+    .catalog-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 20px;
+    }
+
+    /* ── Active filters ── */
+    .active-filters {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 20px;
+    }
+    .filter-tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: var(--black);
+      color: var(--white);
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.5px;
+      padding: 5px 10px;
+    }
+    .filter-tag button {
+      color: rgba(255,255,255,0.7);
+      font-size: 13px;
+      line-height: 1;
+      padding: 0;
+    }
+    .filter-tag button:hover { color: var(--white); }
+
+    /* ── Empty state ── */
+    .empty-state {
+      grid-column: 1/-1;
+      text-align: center;
+      padding: 80px 0;
+      color: var(--gray-500);
+    }
+    .empty-state .empty-icon { font-size: 48px; margin-bottom: 16px; }
+    .empty-state h3 { font-size: 18px; color: var(--black); margin-bottom: 8px; }
+
+    /* ── Mobile filter toggle ── */
+    .mobile-filter-btn {
+      display: none;
+      align-items: center;
+      gap: 8px;
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      padding: 10px 16px;
+      border: 1.5px solid var(--black);
+    }
+    .sidebar-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.4);
+      z-index: 200;
+    }
+    .sidebar-overlay.open { display: block; }
+
+    @media (max-width: 900px) {
+      .catalog-layout { grid-template-columns: 1fr; }
+      .sidebar {
+        position: fixed;
+        top: 0; left: -280px;
+        width: 280px;
+        height: 100vh;
+        background: var(--white);
+        z-index: 210;
+        overflow-y: auto;
+        padding: 24px;
+        transition: left 0.3s ease;
+        box-shadow: 4px 0 20px rgba(0,0,0,0.15);
+      }
+      .sidebar.open { left: 0; }
+      .mobile-filter-btn { display: flex; }
+      .catalog-grid { grid-template-columns: repeat(2, 1fr); }
+    }
+    @media (max-width: 480px) {
+      .catalog-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ── Header ── -->
+  <header class="header">
+    <div class="container">
+      <div class="header-inner">
+        <a href="index.html" class="logo"><img src="assets/logo.png" alt="Emma"/></a>
+        <nav class="nav">
+          <a href="index.html">Inicio</a>
+          <a href="catalogo.html" class="active">Catálogo</a>
+          <a href="catalogo.html?cat=mujer">Mujer</a>
+          <a href="catalogo.html?cat=hombre">Hombre</a>
+          <a href="catalogo.html?cat=maquillaje">Maquillaje</a>
+          <a href="catalogo.html?sale=1" class="sale">Sale</a>
+        </nav>
+        <div class="header-actions">
+          <a href="carrito.html" class="cart-btn">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 01-8 0"/></svg>
+            Carrito <span class="cart-badge" id="cart-count">0</span>
+          </a>
+          <button class="hamburger" id="hamburger-btn"><span></span><span></span><span></span></button>
+        </div>
+      </div>
+    </div>
+    <nav class="mobile-nav" id="mobile-nav">
+      <a href="index.html">Inicio</a>
+      <a href="catalogo.html">Catálogo</a>
+      <a href="catalogo.html?cat=mujer">Mujer</a>
+      <a href="catalogo.html?cat=hombre">Hombre</a>
+      <a href="catalogo.html?cat=maquillaje">Maquillaje</a>
+      <a href="catalogo.html?sale=1" class="sale">Sale</a>
+    </nav>
+  </header>
+
+  <!-- ── Page Hero ── -->
+  <div class="page-hero">
+    <div class="breadcrumb">
+      <a href="index.html">Inicio</a> / <span id="breadcrumb-cat">Catálogo</span>
+    </div>
+    <h1 id="page-title">Catálogo</h1>
+    <p id="page-subtitle">Explorá toda nuestra colección</p>
+  </div>
+
+  <!-- ── Catalog Layout ── -->
+  <div class="container">
+    <div class="catalog-layout">
+
+      <!-- Sidebar (desktop) / Drawer (mobile) -->
+      <aside class="sidebar" id="sidebar">
+        <div class="sidebar-section">
+          <p class="sidebar-title">Categorías</p>
+          <div class="filter-list">
+            <button class="filter-btn" data-filter="cat" data-val="">Todas</button>
+            <button class="filter-btn" data-filter="cat" data-val="buzos">Buzos y Suéteres</button>
+            <button class="filter-btn" data-filter="cat" data-val="pantalones">Pantalones y Jeans</button>
+            <button class="filter-btn" data-filter="cat" data-val="camperas">Camperas y Chalecos</button>
+            <button class="filter-btn" data-filter="cat" data-val="maquillaje">Maquillaje y Belleza</button>
+          </div>
+        </div>
+
+        <div class="sidebar-section">
+          <p class="sidebar-title">Género</p>
+          <div class="filter-list">
+            <button class="filter-btn" data-filter="genero" data-val="">Todos</button>
+            <button class="filter-btn" data-filter="genero" data-val="mujer">Mujer</button>
+            <button class="filter-btn" data-filter="genero" data-val="hombre">Hombre</button>
+          </div>
+        </div>
+
+        <div class="sidebar-section">
+          <p class="sidebar-title">Talle</p>
+          <div class="size-grid" id="size-filter">
+            <button class="size-btn" data-talle="XS">XS</button>
+            <button class="size-btn" data-talle="S">S</button>
+            <button class="size-btn" data-talle="M">M</button>
+            <button class="size-btn" data-talle="L">L</button>
+            <button class="size-btn" data-talle="XL">XL</button>
+            <button class="size-btn" data-talle="XXL">XXL</button>
+          </div>
+        </div>
+
+        <div class="sidebar-section">
+          <p class="sidebar-title">Ofertas</p>
+          <div class="filter-list">
+            <button class="filter-btn" data-filter="sale" data-val="">Todos los precios</button>
+            <button class="filter-btn" data-filter="sale" data-val="1">Solo ofertas</button>
+          </div>
+        </div>
+
+        <button class="btn btn-outline" id="clear-filters" style="width:100%;margin-top:8px;display:none;">
+          Limpiar filtros
+        </button>
+      </aside>
+
+      <!-- Main content -->
+      <main>
+        <!-- Mobile filter button -->
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
+          <button class="mobile-filter-btn" id="mobile-filter-btn">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="4" y1="6" x2="20" y2="6"/><line x1="8" y1="12" x2="16" y2="12"/><line x1="11" y1="18" x2="13" y2="18"/></svg>
+            Filtrar
+          </button>
+        </div>
+
+        <!-- Active filters -->
+        <div class="active-filters" id="active-filters"></div>
+
+        <!-- Toolbar -->
+        <div class="catalog-toolbar">
+          <p class="catalog-count">Mostrando <strong id="results-count">0</strong> productos</p>
+          <select class="sort-select" id="sort-select">
+            <option value="default">Orden predeterminado</option>
+            <option value="precio-asc">Precio: menor a mayor</option>
+            <option value="precio-desc">Precio: mayor a menor</option>
+            <option value="nuevo">Novedades primero</option>
+          </select>
+        </div>
+
+        <!-- Products -->
+        <div class="catalog-grid" id="catalog-grid"></div>
+      </main>
+    </div>
+  </div>
+
+  <!-- Sidebar overlay (mobile) -->
+  <div class="sidebar-overlay" id="sidebar-overlay"></div>
+
+  <!-- ── Footer ── -->
+  <footer class="footer" style="margin-top:0">
+    <div class="container">
+      <div class="footer-bottom" style="border-top:none;padding:24px 0;">
+        <span>© 2026 Emma — Moda a tu Alcance</span>
+        <a href="index.html" style="color:rgba(255,255,255,0.5);font-size:11px;">Volver al inicio</a>
+      </div>
+    </div>
+  </footer>
+
+  <!-- WhatsApp -->
+  <a href="https://wa.me/5492944486963?text=Hola%20Emma%2C%20quiero%20consultar%20sobre%20un%20producto%20%F0%9F%91%97" class="whatsapp-float" target="_blank" rel="noopener" aria-label="WhatsApp">
+    <svg width="26" height="26" viewBox="0 0 24 24" fill="white"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z"/></svg>
+  </a>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+  <script src="js/supabase.js"></script>
+  <script src="js/data.js"></script>
+  <script>
+    // ── State ──────────────────────────────────────────
+    const params = new URLSearchParams(location.search);
+    let state = {
+      cat:    params.get('cat')   || '',
+      genero: params.get('genero')|| '',
+      talle:  '',
+      sale:   params.get('sale')  || '',
+      sort:   'default'
+    };
+
+    // ── Render ─────────────────────────────────────────
+    function renderProducts() {
+      let lista = PRODUCTOS.filter(p => {
+        if (state.cat    && p.categoria !== state.cat) return false;
+        if (state.genero && p.genero    !== state.genero) return false;
+        if (state.sale   && !p.sale) return false;
+        if (state.talle  && !p.talles.includes(state.talle)) return false;
+        return true;
+      });
+
+      // Sort
+      if (state.sort === 'precio-asc')  lista.sort((a,b) => a.precio - b.precio);
+      if (state.sort === 'precio-desc') lista.sort((a,b) => b.precio - a.precio);
+      if (state.sort === 'nuevo')       lista.sort((a,b) => (b.nuevo?1:0) - (a.nuevo?1:0));
+
+      const grid = document.getElementById('catalog-grid');
+      document.getElementById('results-count').textContent = lista.length;
+
+      if (!lista.length) {
+        grid.innerHTML = `
+          <div class="empty-state">
+            <div class="empty-icon">🔍</div>
+            <h3>No encontramos productos</h3>
+            <p>Intentá con otros filtros</p>
+          </div>`;
+        return;
+      }
+
+      grid.innerHTML = lista.map(p => `
+        <a href="producto.html?id=${p.id}" class="product-card">
+          <div class="product-card-image">
+            <img src="${p.imagenes[0]}" alt="${p.nombre}" loading="lazy"/>
+            ${p.nuevo ? '<span class="product-card-badge">Nuevo</span>' : ''}
+            ${p.sale  ? '<span class="product-card-badge" style="background:#c0392b">Oferta</span>' : ''}
+            <span class="product-card-quick">Ver producto</span>
+          </div>
+          <p class="product-card-name">${p.nombre}</p>
+          <p class="product-card-price">
+            ${p.precioAntes ? `<span class="old-price">${formatPrecio(p.precioAntes)}</span>` : ''}
+            ${formatPrecio(p.precio)}
+          </p>
+        </a>
+      `).join('');
+    }
+
+    function renderActiveFilters() {
+      const labels = {
+        cat:    { buzos:'Buzos y Suéteres', pantalones:'Pantalones y Jeans', camperas:'Camperas y Chalecos', maquillaje:'Maquillaje' },
+        genero: { mujer:'Mujer', hombre:'Hombre' },
+        sale:   { '1':'Ofertas' },
+        talle:  {}
+      };
+      const container = document.getElementById('active-filters');
+      const tags = [];
+      if (state.cat)    tags.push({ label: labels.cat[state.cat],    key:'cat' });
+      if (state.genero) tags.push({ label: labels.genero[state.genero], key:'genero' });
+      if (state.sale)   tags.push({ label: 'Ofertas',                  key:'sale' });
+      if (state.talle)  tags.push({ label: `Talle ${state.talle}`,    key:'talle' });
+
+      container.innerHTML = tags.map(t => `
+        <span class="filter-tag">${t.label}
+          <button onclick="clearFilter('${t.key}')">×</button>
+        </span>`).join('');
+
+      document.getElementById('clear-filters').style.display = tags.length ? 'block' : 'none';
+    }
+
+    function clearFilter(key) { state[key] = ''; syncUI(); renderAll(); }
+    function renderAll() { renderProducts(); renderActiveFilters(); }
+
+    function syncUI() {
+      document.querySelectorAll('.filter-btn').forEach(btn => {
+        const f = btn.dataset.filter, v = btn.dataset.val;
+        btn.classList.toggle('active', state[f] === v);
+      });
+      document.querySelectorAll('.size-btn').forEach(btn => {
+        btn.classList.toggle('active', state.talle === btn.dataset.talle);
+      });
+      // Page title
+      const catNames = { '':'Catálogo', buzos:'Buzos y Suéteres', pantalones:'Pantalones y Jeans', camperas:'Camperas y Chalecos', maquillaje:'Maquillaje y Belleza' };
+      const genNames = { '':'', mujer:' — Mujer', hombre:' — Hombre' };
+      document.getElementById('page-title').textContent = (catNames[state.cat]||'Catálogo') + (genNames[state.genero]||'');
+      document.getElementById('breadcrumb-cat').textContent = catNames[state.cat] || 'Catálogo';
+      document.getElementById('page-subtitle').textContent = state.sale ? 'Productos en oferta' : 'Explorá toda nuestra colección';
+    }
+
+    // ── Event listeners ────────────────────────────────
+    document.querySelectorAll('.filter-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        state[btn.dataset.filter] = btn.dataset.val;
+        syncUI(); renderAll();
+        // Close mobile sidebar
+        document.getElementById('sidebar').classList.remove('open');
+        document.getElementById('sidebar-overlay').classList.remove('open');
+      });
+    });
+
+    document.querySelectorAll('.size-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        state.talle = state.talle === btn.dataset.talle ? '' : btn.dataset.talle;
+        syncUI(); renderAll();
+      });
+    });
+
+    document.getElementById('sort-select').addEventListener('change', e => {
+      state.sort = e.target.value; renderAll();
+    });
+
+    document.getElementById('clear-filters').addEventListener('click', () => {
+      state = { cat:'', genero:'', talle:'', sale:'', sort:'default' };
+      syncUI(); renderAll();
+    });
+
+    // Mobile sidebar
+    const sidebar = document.getElementById('sidebar');
+    const overlay = document.getElementById('sidebar-overlay');
+    document.getElementById('mobile-filter-btn').addEventListener('click', () => {
+      sidebar.classList.add('open'); overlay.classList.add('open');
+    });
+    overlay.addEventListener('click', () => {
+      sidebar.classList.remove('open'); overlay.classList.remove('open');
+    });
+
+    // Header hamburger
+    document.getElementById('hamburger-btn').addEventListener('click', () => {
+      document.getElementById('mobile-nav').classList.toggle('open');
+    });
+
+    // ── Init ───────────────────────────────────────────
+    document.getElementById('catalog-grid').innerHTML =
+      '<div style="grid-column:1/-1;text-align:center;padding:60px 0;color:var(--gray-500);">Cargando productos...</div>';
+
+    (async function init() {
+      await loadProductos();
+      syncUI();
+      renderAll();
+      actualizarBadge();
+    })();
+  </script>
+</body>
+</html>

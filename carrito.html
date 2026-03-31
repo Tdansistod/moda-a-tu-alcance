@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Carrito — Emma Moda a tu Alcance</title>
+  <link rel="stylesheet" href="css/styles.css"/>
+  <style>
+    .cart-page { padding: 48px 0 80px; }
+    .cart-layout {
+      display: grid;
+      grid-template-columns: 1fr 360px;
+      gap: 40px;
+      align-items: start;
+    }
+    .cart-section-title {
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: var(--gray-500);
+      margin-bottom: 20px;
+    }
+
+    /* ── Item ── */
+    .cart-items { }
+    .cart-item {
+      display: grid;
+      grid-template-columns: 96px 1fr auto;
+      gap: 20px;
+      padding: 20px 0;
+      border-bottom: 1px solid var(--gray-100);
+      align-items: start;
+    }
+    .cart-item-img {
+      width: 96px;
+      aspect-ratio: 3/4;
+      overflow: hidden;
+      background: var(--gray-100);
+    }
+    .cart-item-img img { width:100%; height:100%; object-fit:cover; }
+
+    .cart-item-name {
+      font-size: 14px;
+      font-weight: 600;
+      margin-bottom: 4px;
+      line-height: 1.3;
+    }
+    .cart-item-meta {
+      font-size: 12px;
+      color: var(--gray-500);
+      margin-bottom: 12px;
+    }
+    .cart-item-qty {
+      display: flex;
+      align-items: center;
+      border: 1.5px solid var(--gray-300);
+      width: fit-content;
+    }
+    .cart-item-qty button {
+      width: 32px; height: 32px;
+      font-size: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background 0.15s;
+    }
+    .cart-item-qty button:hover { background: var(--gray-50); }
+    .cart-item-qty span {
+      width: 36px; height: 32px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 13px;
+      font-weight: 600;
+      border-left: 1.5px solid var(--gray-300);
+      border-right: 1.5px solid var(--gray-300);
+    }
+    .cart-item-price {
+      text-align: right;
+    }
+    .cart-item-price-unit {
+      font-size: 16px;
+      font-weight: 700;
+    }
+    .cart-item-remove {
+      display: block;
+      margin-top: 8px;
+      font-size: 11px;
+      color: var(--gray-500);
+      text-align: right;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      transition: color 0.15s;
+    }
+    .cart-item-remove:hover { color: #c0392b; }
+
+    /* ── Summary ── */
+    .cart-summary {
+      background: var(--gray-50);
+      padding: 28px;
+      position: sticky;
+      top: 86px;
+    }
+    .cart-summary h3 {
+      font-family: var(--font-serif);
+      font-size: 22px;
+      margin-bottom: 24px;
+    }
+    .summary-row {
+      display: flex;
+      justify-content: space-between;
+      font-size: 13px;
+      color: var(--gray-700);
+      margin-bottom: 12px;
+    }
+    .summary-total {
+      display: flex;
+      justify-content: space-between;
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--black);
+      padding-top: 16px;
+      margin-top: 4px;
+      border-top: 2px solid var(--black);
+      margin-bottom: 24px;
+    }
+    .checkout-btn {
+      display: block;
+      width: 100%;
+      padding: 16px;
+      background: var(--black);
+      color: var(--white);
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      text-align: center;
+      transition: background 0.2s;
+      margin-bottom: 12px;
+    }
+    .checkout-btn:hover { background: #333; }
+    .continue-btn {
+      display: block;
+      width: 100%;
+      padding: 14px;
+      border: 1.5px solid var(--black);
+      color: var(--black);
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      text-align: center;
+      transition: all 0.2s;
+    }
+    .continue-btn:hover { background: var(--black); color: var(--white); }
+
+    .summary-note {
+      margin-top: 16px;
+      padding: 12px;
+      background: #f0f7e6;
+      border-left: 3px solid #5a9a2a;
+      font-size: 12px;
+      color: #3a6a1a;
+      line-height: 1.6;
+    }
+
+    /* ── Empty state ── */
+    .cart-empty {
+      text-align: center;
+      padding: 100px 0;
+    }
+    .cart-empty .empty-icon { font-size: 56px; margin-bottom: 20px; }
+    .cart-empty h2 { font-family: var(--font-serif); font-size: 28px; margin-bottom: 10px; }
+    .cart-empty p  { color: var(--gray-500); margin-bottom: 28px; }
+
+    @media (max-width: 900px) {
+      .cart-layout { grid-template-columns: 1fr; }
+      .cart-summary { position: static; }
+    }
+    @media (max-width: 480px) {
+      .cart-item { grid-template-columns: 80px 1fr; }
+      .cart-item-price { grid-column: 2; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Header -->
+  <header class="header">
+    <div class="container">
+      <div class="header-inner">
+        <a href="index.html" class="logo"><img src="assets/logo.png" alt="Emma"/></a>
+        <nav class="nav">
+          <a href="index.html">Inicio</a>
+          <a href="catalogo.html">Catálogo</a>
+          <a href="catalogo.html?cat=mujer">Mujer</a>
+          <a href="catalogo.html?cat=hombre">Hombre</a>
+          <a href="catalogo.html?cat=maquillaje">Maquillaje</a>
+          <a href="catalogo.html?sale=1" class="sale">Sale</a>
+        </nav>
+        <div class="header-actions">
+          <a href="carrito.html" class="cart-btn">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 01-8 0"/></svg>
+            Carrito <span class="cart-badge" id="cart-count">0</span>
+          </a>
+          <button class="hamburger" id="hamburger-btn"><span></span><span></span><span></span></button>
+        </div>
+      </div>
+    </div>
+    <nav class="mobile-nav" id="mobile-nav">
+      <a href="index.html">Inicio</a>
+      <a href="catalogo.html">Catálogo</a>
+      <a href="catalogo.html?cat=mujer">Mujer</a>
+      <a href="catalogo.html?cat=hombre">Hombre</a>
+      <a href="catalogo.html?cat=maquillaje">Maquillaje</a>
+      <a href="catalogo.html?sale=1" class="sale">Sale</a>
+    </nav>
+  </header>
+
+  <div class="container">
+    <div class="cart-page">
+      <!-- Page title -->
+      <div style="margin-bottom:32px; border-bottom:1px solid var(--gray-100); padding-bottom:20px;">
+        <h1 style="font-family:var(--font-serif);font-size:clamp(24px,3vw,36px);font-weight:700;">Tu carrito</h1>
+      </div>
+
+      <div id="cart-content"></div>
+    </div>
+  </div>
+
+  <!-- WhatsApp -->
+  <a href="https://wa.me/5492944486963" class="whatsapp-float" target="_blank" rel="noopener" aria-label="WhatsApp">
+    <svg width="26" height="26" viewBox="0 0 24 24" fill="white"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z"/></svg>
+  </a>
+
+  <script src="js/data.js"></script>
+  <script>
+    function render() {
+      const cart = getCarrito();
+      const container = document.getElementById('cart-content');
+
+      if (!cart.length) {
+        container.innerHTML = `
+          <div class="cart-empty">
+            <div class="empty-icon">🛍️</div>
+            <h2>Tu carrito está vacío</h2>
+            <p>Explorá nuestra tienda y encontrá algo que te guste.</p>
+            <a href="catalogo.html" class="btn btn-dark">Ver catálogo</a>
+          </div>`;
+        return;
+      }
+
+      const subtotal = totalCarrito();
+
+      container.innerHTML = `
+        <div class="cart-layout">
+
+          <!-- Items -->
+          <div class="cart-items">
+            <p class="cart-section-title">${cantidadCarrito()} artículo${cantidadCarrito()!==1?'s':''}</p>
+            ${cart.map(item => `
+              <div class="cart-item" id="item-${item.key}">
+                <a href="producto.html?id=${item.id}" class="cart-item-img">
+                  <img src="${item.imagen}" alt="${item.nombre}" loading="lazy"/>
+                </a>
+                <div>
+                  <p class="cart-item-name">${item.nombre}</p>
+                  <p class="cart-item-meta">Talle: ${item.talle} &nbsp;|&nbsp; Color: ${item.color}</p>
+                  <div class="cart-item-qty">
+                    <button onclick="update('${item.key}', -1)">−</button>
+                    <span>${item.qty}</span>
+                    <button onclick="update('${item.key}', 1)">+</button>
+                  </div>
+                </div>
+                <div class="cart-item-price">
+                  <p class="cart-item-price-unit">${formatPrecio(item.precio * item.qty)}</p>
+                  <small style="color:var(--gray-500);font-size:11px;">${formatPrecio(item.precio)} c/u</small>
+                  <button class="cart-item-remove" onclick="remove('${item.key}')">Eliminar</button>
+                </div>
+              </div>
+            `).join('')}
+
+            <div style="margin-top:20px;">
+              <button onclick="clearAll()" style="font-size:11px;color:var(--gray-500);text-transform:uppercase;letter-spacing:0.5px;border-bottom:1px solid var(--gray-300);">
+                Vaciar carrito
+              </button>
+            </div>
+          </div>
+
+          <!-- Summary -->
+          <div class="cart-summary">
+            <h3>Resumen</h3>
+
+            ${cart.map(item => `
+              <div class="summary-row">
+                <span>${item.nombre} (${item.talle}, ${item.color}) ×${item.qty}</span>
+                <span>${formatPrecio(item.precio * item.qty)}</span>
+              </div>
+            `).join('')}
+
+            <div class="summary-row" style="margin-top:12px;padding-top:12px;border-top:1px solid var(--gray-100);">
+              <span>Subtotal</span><span>${formatPrecio(subtotal)}</span>
+            </div>
+            <div class="summary-row">
+              <span>Envío</span>
+              <span style="color:#5a9a2a;font-weight:600;">A coordinar</span>
+            </div>
+
+            <div class="summary-total">
+              <span>Total</span>
+              <span>${formatPrecio(subtotal)}</span>
+            </div>
+
+            <a href="checkout.html" class="checkout-btn">Confirmar pedido</a>
+            <a href="catalogo.html" class="continue-btn">Seguir comprando</a>
+
+            <div class="summary-note">
+              💡 Coordinamos el pago y el envío por WhatsApp. ¡Es rápido y fácil!
+            </div>
+          </div>
+
+        </div>`;
+    }
+
+    function update(key, d) {
+      cambiarCantidad(key, d);
+      render();
+    }
+    function remove(key) {
+      eliminarDelCarrito(key);
+      render();
+    }
+    function clearAll() {
+      if (confirm('¿Vaciás el carrito?')) { vaciarCarrito(); render(); }
+    }
+
+    document.getElementById('hamburger-btn').addEventListener('click', () => {
+      document.getElementById('mobile-nav').classList.toggle('open');
+    });
+
+    render();
+    actualizarBadge();
+  </script>
+</body>
+</html>
