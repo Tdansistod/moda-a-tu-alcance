@@ -535,6 +535,13 @@
       .stats-grid { grid-template-columns: repeat(2, 1fr); }
       .admin-hamburger { display: flex; }
       .search-input { min-width: 0; width: 100%; }
+      .modal-overlay { padding: 0; align-items: flex-end; }
+      .modal { max-height: 92vh; display: flex; flex-direction: column; }
+      .modal-body { overflow-y: auto; flex: 1; }
+      .modal-footer { flex-wrap: wrap; }
+      .modal-footer select { min-width: 0 !important; width: 100%; }
+      .modal-footer .btn,
+      .modal-footer .action-btn { flex: 1; text-align: center; justify-content: center; }
     }
   </style>
 </head>
