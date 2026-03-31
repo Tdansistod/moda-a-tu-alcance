@@ -791,10 +791,10 @@ button { cursor: pointer; font-family: var(--font-sans); border: none; backgroun
 [data-theme="dark"] .hero-bg::after { background: rgba(255,255,255,0.03); }
 
 /* ── Logo swap ──────────────────────────────────────── */
-.logo-img-light { display: none; }
-.logo-img-dark  { display: block; }
-[data-theme="dark"] .logo-img-light { display: block; }
-[data-theme="dark"] .logo-img-dark  { display: none; }
+.logo-img-light { display: block; }
+.logo-img-dark  { display: none; }
+[data-theme="dark"] .logo-img-light { display: none; }
+[data-theme="dark"] .logo-img-dark  { display: block; }
 
 /* ── Theme toggle button ───────────────────────────── */
 .theme-toggle {
