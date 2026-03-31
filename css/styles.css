@@ -223,7 +223,7 @@ button { cursor: pointer; font-family: var(--font-sans); border: none; backgroun
 .hero-bg {
   position: absolute;
   inset: 0;
-  background: linear-gradient(135deg, #f0ede8 0%, #e8e4dc 50%, #ddd9d0 100%);
+  background: url('https://pztftznwvrsoipiuhwof.supabase.co/storage/v1/object/public/assets/hero/hero.jpg') center/cover no-repeat;
 }
 
 /* Decorative shape */
