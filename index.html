@@ -120,57 +120,7 @@
         <h2 class="section-title">Categorías</h2>
       </div>
 
-      <div class="categories-grid">
-
-        <a href="catalogo.html?cat=buzos" class="category-card">
-          <img
-            src="https://pztftznwvrsoipiuhwof.supabase.co/storage/v1/object/public/assets/category-images/sueter.jpeg"
-            alt="Buzos y Suéteres"
-            loading="lazy"
-          />
-          <div class="category-card-overlay">
-            <span class="category-card-name">Buzos y Suéteres</span>
-            <span class="category-card-link">Ver colección</span>
-          </div>
-        </a>
-
-        <a href="catalogo.html?cat=pantalones" class="category-card">
-          <img
-            src="https://pztftznwvrsoipiuhwof.supabase.co/storage/v1/object/public/assets/category-images/jeans.jpeg"
-            alt="Pantalones y Jeans"
-            loading="lazy"
-          />
-          <div class="category-card-overlay">
-            <span class="category-card-name">Pantalones y Jeans</span>
-            <span class="category-card-link">Ver colección</span>
-          </div>
-        </a>
-
-        <a href="catalogo.html?cat=camperas" class="category-card">
-          <img
-            src="https://pztftznwvrsoipiuhwof.supabase.co/storage/v1/object/public/assets/category-images/camperas.jpeg"
-            alt="Camperas y Chalecos"
-            loading="lazy"
-          />
-          <div class="category-card-overlay">
-            <span class="category-card-name">Camperas y Chalecos</span>
-            <span class="category-card-link">Ver colección</span>
-          </div>
-        </a>
-
-        <a href="catalogo.html?cat=maquillaje" class="category-card">
-          <img
-            src="https://pztftznwvrsoipiuhwof.supabase.co/storage/v1/object/public/assets/category-images/maquillaje.jpeg"
-            alt="Maquillaje y Belleza"
-            loading="lazy"
-          />
-          <div class="category-card-overlay">
-            <span class="category-card-name">Maquillaje y Belleza</span>
-            <span class="category-card-link">Ver tendencias</span>
-          </div>
-        </a>
-
-      </div>
+      <div class="categories-grid" id="categories-grid"></div>
     </div>
   </section>
 
@@ -343,6 +293,7 @@
   <script src="js/supabase.js"></script>
   <script src="js/data.js"></script>
   <script src="js/theme.js"></script>
+  <script src="js/categories.js"></script>
   <script>
     // Mobile menu toggle
     const hamburger = document.getElementById('hamburger-btn');
@@ -385,6 +336,17 @@
     }
 
     init();
+
+    // Renderizar grilla de categorías desde config central
+    document.getElementById('categories-grid').innerHTML = CATEGORIES.map(c => `
+      <a href="catalogo.html?cat=${c.slug}" class="category-card">
+        <img src="${c.imagen}" alt="${c.nombre}" loading="lazy"/>
+        <div class="category-card-overlay">
+          <span class="category-card-name">${c.nombre}</span>
+          <span class="category-card-link">${c.cta}</span>
+        </div>
+      </a>
+    `).join('');
   </script>
 
 </body>

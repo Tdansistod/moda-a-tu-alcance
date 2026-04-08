@@ -261,12 +261,8 @@
       <aside class="sidebar" id="sidebar">
         <div class="sidebar-section">
           <p class="sidebar-title">Categorías</p>
-          <div class="filter-list">
+          <div class="filter-list" id="cat-filter-list">
             <button class="filter-btn" data-filter="cat" data-val="">Todas</button>
-            <button class="filter-btn" data-filter="cat" data-val="buzos">Buzos y Suéteres</button>
-            <button class="filter-btn" data-filter="cat" data-val="pantalones">Pantalones y Jeans</button>
-            <button class="filter-btn" data-filter="cat" data-val="camperas">Camperas y Chalecos</button>
-            <button class="filter-btn" data-filter="cat" data-val="maquillaje">Maquillaje y Belleza</button>
           </div>
         </div>
 
@@ -356,6 +352,7 @@
   <script src="js/supabase.js"></script>
   <script src="js/data.js"></script>
   <script src="js/theme.js"></script>
+  <script src="js/categories.js"></script>
   <script>
     // ── State ──────────────────────────────────────────
     const params = new URLSearchParams(location.search);
@@ -413,8 +410,9 @@
     }
 
     function renderActiveFilters() {
+      const catLabels = Object.fromEntries(CATEGORIES.map(c => [c.slug, c.nombre]));
       const labels = {
-        cat:    { buzos:'Buzos y Suéteres', pantalones:'Pantalones y Jeans', camperas:'Camperas y Chalecos', maquillaje:'Maquillaje' },
+        cat:    catLabels,
         genero: { mujer:'Mujer', hombre:'Hombre' },
         sale:   { '1':'Ofertas' },
         talle:  {}
@@ -446,7 +444,7 @@
         btn.classList.toggle('active', state.talle === btn.dataset.talle);
       });
       // Page title
-      const catNames = { '':'Catálogo', buzos:'Buzos y Suéteres', pantalones:'Pantalones y Jeans', camperas:'Camperas y Chalecos', maquillaje:'Maquillaje y Belleza' };
+      const catNames = { '':'Catálogo', ...Object.fromEntries(CATEGORIES.map(c => [c.slug, c.nombre])) };
       const genNames = { '':'', mujer:' — Mujer', hombre:' — Hombre' };
       document.getElementById('page-title').textContent = (catNames[state.cat]||'Catálogo') + (genNames[state.genero]||'');
       document.getElementById('breadcrumb-cat').textContent = catNames[state.cat] || 'Catálogo';
@@ -498,6 +496,25 @@
     // ── Init ───────────────────────────────────────────
     document.getElementById('catalog-grid').innerHTML =
       '<div style="grid-column:1/-1;text-align:center;padding:60px 0;color:var(--gray-500);">Cargando productos...</div>';
+
+    // Populate category filter buttons from central config
+    const catFilterList = document.getElementById('cat-filter-list');
+    CATEGORIES.forEach(c => {
+      const btn = document.createElement('button');
+      btn.className = 'filter-btn';
+      btn.dataset.filter = 'cat';
+      btn.dataset.val = c.slug;
+      btn.textContent = c.nombre;
+      catFilterList.appendChild(btn);
+    });
+    // Re-attach listeners after dynamic render
+    document.querySelectorAll('#cat-filter-list .filter-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        state[btn.dataset.filter] = btn.dataset.val;
+        syncUI();
+        renderAll();
+      });
+    });
 
     (async function init() {
       await loadProductos();

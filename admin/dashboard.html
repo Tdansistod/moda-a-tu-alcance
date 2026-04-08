@@ -720,12 +720,7 @@
             </div>
             <div class="mform-group">
               <label class="mform-label">Categoría *</label>
-              <select class="mform-select" id="p-categoria">
-                <option value="buzos">Buzos y Suéteres</option>
-                <option value="pantalones">Pantalones y Jeans</option>
-                <option value="camperas">Camperas y Chalecos</option>
-                <option value="maquillaje">Maquillaje y Belleza</option>
-              </select>
+              <select class="mform-select" id="p-categoria"></select>
             </div>
           </div>
           <div class="mform-row">
@@ -803,7 +798,19 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
   <script src="../js/supabase.js"></script>
   <script src="../js/data.js"></script>
+  <script src="../js/categories.js"></script>
   <script>
+    // ── Populate category select from central config ──
+    (function() {
+      const sel = document.getElementById('p-categoria');
+      CATEGORIES.forEach(c => {
+        const opt = document.createElement('option');
+        opt.value = c.slug;
+        opt.textContent = c.nombre;
+        sel.appendChild(opt);
+      });
+    })();
+
     // ── Auth guard ─────────────────────────────────────
     async function logout() {
       await db.auth.signOut();
@@ -991,7 +998,7 @@
     }
 
     // ── PRODUCTOS ──────────────────────────────────────
-    const catNames = { buzos:'Buzos y Suéteres', pantalones:'Pantalones y Jeans', camperas:'Camperas y Chalecos', maquillaje:'Maquillaje' };
+    const catNames = Object.fromEntries(CATEGORIES.map(c => [c.slug, c.nombre]));
 
     function renderProductos(list) {
       const tbody = document.getElementById('products-body');
