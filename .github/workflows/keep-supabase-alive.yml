@@ -1,0 +1,17 @@
+name: Keep Supabase alive
+
+on:
+  schedule:
+    - cron: "0 12 * * *" # todos los días a las 12:00 UTC
+  workflow_dispatch: # permite ejecutarlo a mano para probar
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Query products table
+        run: |
+          curl --fail --silent --show-error \
+            "https://pztftznwvrsoipiuhwof.supabase.co/rest/v1/products?select=id&limit=1" \
+            -H "apikey: ${{ secrets.SUPABASE_ANON_KEY }}" \
+            -H "Authorization: Bearer ${{ secrets.SUPABASE_ANON_KEY }}"
