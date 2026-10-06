@@ -1,331 +1,544 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="es">
-<head>
-  <meta charset="UTF-8"/>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Confirmar pedido — Emma Moda a tu Alcance</title>
-  <link rel="icon" type="image/svg+xml" href="/favicon.svg"/>
-  <script>(function(){var t=localStorage.getItem('emma_theme')||(window.matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light');document.documentElement.setAttribute('data-theme',t);})();</script>
-  <link rel="stylesheet" href="css/styles.css"/>
-  <style>
-    .checkout-page { padding: 48px 0 80px; }
-    .checkout-layout {
-      display: grid;
-      grid-template-columns: 1fr 380px;
-      gap: 48px;
-      align-items: start;
-    }
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Confirmar pedido — Emma Moda a tu Alcance</title>
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <script>
+      (function () {
+        var t =
+          localStorage.getItem("emma_theme") ||
+          (window.matchMedia("(prefers-color-scheme:dark)").matches
+            ? "dark"
+            : "light");
+        document.documentElement.setAttribute("data-theme", t);
+      })();
+    </script>
+    <link rel="stylesheet" href="css/styles.css" />
+    <style>
+      .checkout-page {
+        padding: 48px 0 80px;
+      }
+      .checkout-layout {
+        display: grid;
+        grid-template-columns: 1fr 380px;
+        gap: 48px;
+        align-items: start;
+      }
 
-    /* Steps */
-    .checkout-steps {
-      display: flex;
-      align-items: center;
-      gap: 0;
-      margin-bottom: 36px;
-      overflow-x: auto;
-    }
-    .step-item {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      font-size: 11px;
-      font-weight: 700;
-      letter-spacing: 1px;
-      text-transform: uppercase;
-      color: var(--gray-300);
-      white-space: nowrap;
-    }
-    .step-item.active { color: var(--black); }
-    .step-item.done   { color: var(--gray-500); }
-    .step-num {
-      width: 28px; height: 28px;
-      border-radius: 50%;
-      border: 2px solid currentColor;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 12px;
-      font-weight: 700;
-      flex-shrink: 0;
-    }
-    .step-item.active .step-num { background: var(--black); color: var(--white); border-color: var(--black); }
-    .step-divider { flex: 1; height: 1px; background: var(--gray-300); margin: 0 12px; min-width: 24px; }
+      /* Steps */
+      .checkout-steps {
+        display: flex;
+        align-items: center;
+        gap: 0;
+        margin-bottom: 36px;
+        overflow-x: auto;
+      }
+      .step-item {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 11px;
+        font-weight: 700;
+        letter-spacing: 1px;
+        text-transform: uppercase;
+        color: var(--gray-300);
+        white-space: nowrap;
+      }
+      .step-item.active {
+        color: var(--black);
+      }
+      .step-item.done {
+        color: var(--gray-500);
+      }
+      .step-num {
+        width: 28px;
+        height: 28px;
+        border-radius: 50%;
+        border: 2px solid currentColor;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 12px;
+        font-weight: 700;
+        flex-shrink: 0;
+      }
+      .step-item.active .step-num {
+        background: var(--black);
+        color: var(--white);
+        border-color: var(--black);
+      }
+      .step-divider {
+        flex: 1;
+        height: 1px;
+        background: var(--gray-300);
+        margin: 0 12px;
+        min-width: 24px;
+      }
 
-    /* Form */
-    .form-title {
-      font-family: var(--font-serif);
-      font-size: 22px;
-      font-weight: 700;
-      margin-bottom: 24px;
-    }
-    .form-group { margin-bottom: 20px; }
-    .form-label {
-      display: block;
-      font-size: 11px;
-      font-weight: 700;
-      letter-spacing: 1px;
-      text-transform: uppercase;
-      color: var(--gray-700);
-      margin-bottom: 7px;
-    }
-    .form-input, .form-select, .form-textarea {
-      width: 100%;
-      padding: 12px 14px;
-      font-family: var(--font-sans);
-      font-size: 14px;
-      color: var(--black);
-      background: var(--white);
-      border: 1.5px solid var(--gray-300);
-      transition: border-color 0.2s;
-      outline: none;
-    }
-    .form-input:focus, .form-select:focus, .form-textarea:focus { border-color: var(--black); }
-    .form-input.error { border-color: #c0392b; }
-    .form-error {
-      display: none;
-      font-size: 11px;
-      color: #c0392b;
-      margin-top: 5px;
-    }
-    .form-error.show { display: block; }
-    .form-hint {
-      font-size: 11px;
-      color: var(--gray-500);
-      margin-top: 5px;
-    }
-    .form-row {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 16px;
-    }
-    .form-textarea { resize: vertical; min-height: 80px; }
-    .form-section-title {
-      font-size: 10px;
-      font-weight: 700;
-      letter-spacing: 2px;
-      text-transform: uppercase;
-      color: var(--gray-500);
-      margin: 32px 0 16px;
-      padding-bottom: 8px;
-      border-bottom: 1px solid var(--gray-100);
-    }
+      /* Form */
+      .form-title {
+        font-family: var(--font-serif);
+        font-size: 22px;
+        font-weight: 700;
+        margin-bottom: 24px;
+      }
+      .form-group {
+        margin-bottom: 20px;
+      }
+      .form-label {
+        display: block;
+        font-size: 11px;
+        font-weight: 700;
+        letter-spacing: 1px;
+        text-transform: uppercase;
+        color: var(--gray-700);
+        margin-bottom: 7px;
+      }
+      .form-input,
+      .form-select,
+      .form-textarea {
+        width: 100%;
+        padding: 12px 14px;
+        font-family: var(--font-sans);
+        font-size: 14px;
+        color: var(--black);
+        background: var(--white);
+        border: 1.5px solid var(--gray-300);
+        transition: border-color 0.2s;
+        outline: none;
+      }
+      .form-input:focus,
+      .form-select:focus,
+      .form-textarea:focus {
+        border-color: var(--black);
+      }
+      .form-input.error {
+        border-color: #c0392b;
+      }
+      .form-error {
+        display: none;
+        font-size: 11px;
+        color: #c0392b;
+        margin-top: 5px;
+      }
+      .form-error.show {
+        display: block;
+      }
+      .form-hint {
+        font-size: 11px;
+        color: var(--gray-500);
+        margin-top: 5px;
+      }
+      .form-row {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 16px;
+      }
+      .form-textarea {
+        resize: vertical;
+        min-height: 80px;
+      }
+      .form-section-title {
+        font-size: 10px;
+        font-weight: 700;
+        letter-spacing: 2px;
+        text-transform: uppercase;
+        color: var(--gray-500);
+        margin: 32px 0 16px;
+        padding-bottom: 8px;
+        border-bottom: 1px solid var(--gray-100);
+      }
 
-    .submit-btn {
-      display: block;
-      width: 100%;
-      padding: 16px;
-      background: var(--black);
-      color: var(--white);
-      font-size: 13px;
-      font-weight: 700;
-      letter-spacing: 1.5px;
-      text-transform: uppercase;
-      text-align: center;
-      transition: background 0.2s;
-      margin-top: 28px;
-      border: none;
-      cursor: pointer;
-    }
-    .submit-btn:hover { background: #333; }
+      .submit-btn {
+        display: block;
+        width: 100%;
+        padding: 16px;
+        background: var(--black);
+        color: var(--white);
+        font-size: 13px;
+        font-weight: 700;
+        letter-spacing: 1.5px;
+        text-transform: uppercase;
+        text-align: center;
+        transition: background 0.2s;
+        margin-top: 28px;
+        border: none;
+        cursor: pointer;
+      }
+      .submit-btn:hover {
+        background: #333;
+      }
 
-    /* Order summary sidebar */
-    .order-summary {
-      background: var(--gray-50);
-      padding: 28px;
-      position: sticky;
-      top: 86px;
-    }
-    .order-summary h3 {
-      font-family: var(--font-serif);
-      font-size: 20px;
-      margin-bottom: 20px;
-    }
-    .order-item {
-      display: flex;
-      gap: 12px;
-      align-items: center;
-      margin-bottom: 16px;
-    }
-    .order-item-img {
-      width: 60px;
-      aspect-ratio: 3/4;
-      overflow: hidden;
-      background: var(--gray-100);
-      flex-shrink: 0;
-      position: relative;
-    }
-    .order-item-img img { width:100%; height:100%; object-fit:cover; }
-    .order-item-qty {
-      position: absolute;
-      top: -6px; right: -6px;
-      width: 20px; height: 20px;
-      background: var(--black);
-      color: var(--white);
-      font-size: 10px;
-      font-weight: 700;
-      border-radius: 50%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-    .order-item-name { font-size: 13px; font-weight: 600; line-height: 1.3; }
-    .order-item-meta { font-size: 11px; color: var(--gray-500); margin-top: 2px; }
-    .order-item-price { margin-left: auto; font-size: 13px; font-weight: 700; white-space: nowrap; }
+      /* Order summary sidebar */
+      .order-summary {
+        background: var(--gray-50);
+        padding: 28px;
+        position: sticky;
+        top: 86px;
+      }
+      .order-summary h3 {
+        font-family: var(--font-serif);
+        font-size: 20px;
+        margin-bottom: 20px;
+      }
+      .order-item {
+        display: flex;
+        gap: 12px;
+        align-items: center;
+        margin-bottom: 16px;
+      }
+      .order-item-img {
+        width: 60px;
+        aspect-ratio: 3/4;
+        overflow: hidden;
+        background: var(--gray-100);
+        flex-shrink: 0;
+        position: relative;
+      }
+      .order-item-img img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+      }
+      .order-item-qty {
+        position: absolute;
+        top: -6px;
+        right: -6px;
+        width: 20px;
+        height: 20px;
+        background: var(--black);
+        color: var(--white);
+        font-size: 10px;
+        font-weight: 700;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      .order-item-name {
+        font-size: 13px;
+        font-weight: 600;
+        line-height: 1.3;
+      }
+      .order-item-meta {
+        font-size: 11px;
+        color: var(--gray-500);
+        margin-top: 2px;
+      }
+      .order-item-price {
+        margin-left: auto;
+        font-size: 13px;
+        font-weight: 700;
+        white-space: nowrap;
+      }
 
-    .order-divider { height: 1px; background: var(--gray-300); margin: 16px 0; }
-    .order-row {
-      display: flex;
-      justify-content: space-between;
-      font-size: 13px;
-      color: var(--gray-700);
-      margin-bottom: 10px;
-    }
-    .order-total {
-      display: flex;
-      justify-content: space-between;
-      font-size: 17px;
-      font-weight: 700;
-      margin-top: 12px;
-      padding-top: 12px;
-      border-top: 2px solid var(--black);
-    }
+      .order-divider {
+        height: 1px;
+        background: var(--gray-300);
+        margin: 16px 0;
+      }
+      .order-row {
+        display: flex;
+        justify-content: space-between;
+        font-size: 13px;
+        color: var(--gray-700);
+        margin-bottom: 10px;
+      }
+      .order-total {
+        display: flex;
+        justify-content: space-between;
+        font-size: 17px;
+        font-weight: 700;
+        margin-top: 12px;
+        padding-top: 12px;
+        border-top: 2px solid var(--black);
+      }
 
-    @media (max-width: 900px) {
-      .checkout-layout { grid-template-columns: 1fr; }
-      .order-summary { position: static; order: -1; }
-    }
-    @media (max-width: 480px) {
-      .form-row { grid-template-columns: 1fr; }
-    }
-  </style>
-</head>
-<body>
-
-  <!-- Header minimal -->
-  <header class="header">
-    <div class="container">
-      <div class="header-inner">
-        <a href="index.html" class="logo">
-          <img class="logo-img-dark"  src="https://pztftznwvrsoipiuhwof.supabase.co/storage/v1/object/public/assets/logo/logo-dark.jpg"  alt="Emma"/>
-          <img class="logo-img-light" src="https://pztftznwvrsoipiuhwof.supabase.co/storage/v1/object/public/assets/logo/logo-light.jpg" alt="Emma"/>
-        </a>
-        <div class="header-actions">
-          <a href="carrito.html" class="cart-btn">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 01-8 0"/></svg>
-            <span class="cart-label">Carrito</span> <span class="cart-badge" id="cart-count">0</span>
+      @media (max-width: 900px) {
+        .checkout-layout {
+          grid-template-columns: 1fr;
+        }
+        .order-summary {
+          position: static;
+          order: -1;
+        }
+      }
+      @media (max-width: 480px) {
+        .form-row {
+          grid-template-columns: 1fr;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <!-- Header minimal -->
+    <header class="header">
+      <div class="container">
+        <div class="header-inner">
+          <a href="index.html" class="logo">
+            <img
+              class="logo-img-dark"
+              src="https://pztftznwvrsoipiuhwof.supabase.co/storage/v1/object/public/assets/logo/logo-dark.jpg"
+              alt="Emma"
+            />
+            <img
+              class="logo-img-light"
+              src="https://pztftznwvrsoipiuhwof.supabase.co/storage/v1/object/public/assets/logo/logo-light.jpg"
+              alt="Emma"
+            />
           </a>
-          <button class="theme-toggle" onclick="toggleTheme()" aria-label="Cambiar tema">
-            <svg class="theme-icon-light" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
-            <svg class="theme-icon-dark" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
-          </button>
-        </div>
-      </div>
-    </div>
-  </header>
-
-  <div class="container">
-    <div class="checkout-page">
-
-      <!-- Steps -->
-      <div class="checkout-steps">
-        <div class="step-item done">
-          <span class="step-num">✓</span>
-          <span>Carrito</span>
-        </div>
-        <div class="step-divider"></div>
-        <div class="step-item active">
-          <span class="step-num">2</span>
-          <span>Tus datos</span>
-        </div>
-        <div class="step-divider"></div>
-        <div class="step-item">
-          <span class="step-num">3</span>
-          <span>Confirmación</span>
-        </div>
-      </div>
-
-      <div class="checkout-layout">
-
-        <!-- Form -->
-        <div>
-          <p class="form-section-title">Datos personales</p>
-
-          <form id="checkout-form" novalidate>
-            <div class="form-row">
-              <div class="form-group">
-                <label class="form-label" for="nombre">Nombre completo *</label>
-                <input class="form-input" type="text" id="nombre" name="nombre" placeholder="Ej: María González" autocomplete="name"/>
-                <span class="form-error" id="err-nombre">Ingresá tu nombre</span>
-              </div>
-              <div class="form-group">
-                <label class="form-label" for="whatsapp">WhatsApp *</label>
-                <input class="form-input" type="tel" id="whatsapp" name="whatsapp" placeholder="Ej: 2944 123456" autocomplete="tel"/>
-                <span class="form-error" id="err-whatsapp">Ingresá tu número de WhatsApp</span>
-                <span class="form-hint">Sin el 0 ni el 15, solo el número</span>
-              </div>
-            </div>
-
-            <p class="form-section-title">Dirección de entrega</p>
-
-            <div class="form-group">
-              <label class="form-label" for="direccion">Calle y número *</label>
-              <input class="form-input" type="text" id="direccion" name="direccion" placeholder="Ej: San Martín 1234" autocomplete="street-address"/>
-              <span class="form-error" id="err-direccion">Ingresá tu dirección</span>
-            </div>
-
-            <div class="form-row">
-              <div class="form-group">
-                <label class="form-label" for="localidad">Localidad *</label>
-                <input class="form-input" type="text" id="localidad" name="localidad" placeholder="Ej: Bariloche" autocomplete="address-level2"/>
-                <span class="form-error" id="err-localidad">Ingresá tu localidad</span>
-              </div>
-              <div class="form-group">
-                <label class="form-label" for="provincia">Provincia</label>
-                <input class="form-input" type="text" id="provincia" name="provincia" placeholder="Ej: Río Negro" autocomplete="address-level1"/>
-              </div>
-            </div>
-
-            <div class="form-group">
-              <label class="form-label" for="nota">Nota para el pedido (opcional)</label>
-              <textarea class="form-textarea" id="nota" name="nota" placeholder="Ej: Aclarar alguna duda, preferencia de color alternativo..."></textarea>
-            </div>
-
-            <div style="background:var(--gray-50);padding:16px;margin-top:8px;border-left:3px solid var(--gray-300);">
-              <p style="font-size:12px;color:var(--gray-700);line-height:1.7;">
-                📱 <strong>¿Cómo sigue?</strong> Una vez que confirmes el pedido, te vamos a contactar por WhatsApp para verificar el stock, coordinar el envío y enviarte el link de pago de Mercado Pago.
-              </p>
-            </div>
-
-            <button type="submit" class="submit-btn">
-              Enviar pedido →
+          <div class="header-actions">
+            <a href="carrito.html" class="cart-btn">
+              <svg
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z" />
+                <line x1="3" y1="6" x2="21" y2="6" />
+                <path d="M16 10a4 4 0 01-8 0" />
+              </svg>
+              <span class="cart-label">Carrito</span>
+              <span class="cart-badge" id="cart-count">0</span>
+            </a>
+            <button
+              class="theme-toggle"
+              onclick="toggleTheme()"
+              aria-label="Cambiar tema"
+            >
+              <svg
+                class="theme-icon-light"
+                width="15"
+                height="15"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
+              </svg>
+              <svg
+                class="theme-icon-dark"
+                width="15"
+                height="15"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <circle cx="12" cy="12" r="5" />
+                <line x1="12" y1="1" x2="12" y2="3" />
+                <line x1="12" y1="21" x2="12" y2="23" />
+                <line x1="4.22" y1="4.22" x2="5.64" y2="5.64" />
+                <line x1="18.36" y1="18.36" x2="19.78" y2="19.78" />
+                <line x1="1" y1="12" x2="3" y2="12" />
+                <line x1="21" y1="12" x2="23" y2="12" />
+                <line x1="4.22" y1="19.78" x2="5.64" y2="18.36" />
+                <line x1="18.36" y1="5.64" x2="19.78" y2="4.22" />
+              </svg>
             </button>
-          </form>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <div class="container">
+      <div class="checkout-page">
+        <!-- Steps -->
+        <div class="checkout-steps">
+          <div class="step-item done">
+            <span class="step-num">✓</span>
+            <span>Carrito</span>
+          </div>
+          <div class="step-divider"></div>
+          <div class="step-item active">
+            <span class="step-num">2</span>
+            <span>Tus datos</span>
+          </div>
+          <div class="step-divider"></div>
+          <div class="step-item">
+            <span class="step-num">3</span>
+            <span>Confirmación</span>
+          </div>
         </div>
 
-        <!-- Order summary -->
-        <aside class="order-summary" id="order-summary">
-          <h3>Tu pedido</h3>
-          <div id="summary-items"></div>
-          <div class="order-divider"></div>
-          <div class="order-row"><span>Subtotal</span><span id="summary-subtotal"></span></div>
-          <div class="order-row"><span>Envío</span><span style="color:#5a9a2a;font-weight:600;">A coordinar</span></div>
-          <div class="order-total"><span>Total</span><span id="summary-total"></span></div>
-        </aside>
+        <div class="checkout-layout">
+          <!-- Form -->
+          <div>
+            <p class="form-section-title">Datos personales</p>
+
+            <form id="checkout-form" novalidate>
+              <div class="form-row">
+                <div class="form-group">
+                  <label class="form-label" for="nombre"
+                    >Nombre completo *</label
+                  >
+                  <input
+                    class="form-input"
+                    type="text"
+                    id="nombre"
+                    name="nombre"
+                    maxlength="100"
+                    placeholder="Ej: María González"
+                    autocomplete="name"
+                  />
+                  <span class="form-error" id="err-nombre"
+                    >Ingresá tu nombre</span
+                  >
+                </div>
+                <div class="form-group">
+                  <label class="form-label" for="whatsapp">WhatsApp *</label>
+                  <input
+                    class="form-input"
+                    type="tel"
+                    id="whatsapp"
+                    name="whatsapp"
+                    placeholder="Ej: 2944 123456"
+                    maxlength="30"
+                    autocomplete="tel"
+                  />
+                  <span class="form-error" id="err-whatsapp"
+                    >Ingresá tu número de WhatsApp</span
+                  >
+                  <span class="form-hint"
+                    >Sin el 0 ni el 15, solo el número</span
+                  >
+                </div>
+              </div>
+
+              <p class="form-section-title">Dirección de entrega</p>
+
+              <div class="form-group">
+                <label class="form-label" for="direccion"
+                  >Calle y número *</label
+                >
+                <input
+                  class="form-input"
+                  type="text"
+                  id="direccion"
+                  name="direccion"
+                  maxlength="200"
+                  placeholder="Ej: San Martín 1234"
+                  autocomplete="street-address"
+                />
+                <span class="form-error" id="err-direccion"
+                  >Ingresá tu dirección</span
+                >
+              </div>
+
+              <div class="form-row">
+                <div class="form-group">
+                  <label class="form-label" for="localidad">Localidad *</label>
+                  <input
+                    class="form-input"
+                    type="text"
+                    id="localidad"
+                    name="localidad"
+                    placeholder="Ej: Bariloche"
+                    maxlength="100"
+                    autocomplete="address-level2"
+                  />
+                  <span class="form-error" id="err-localidad"
+                    >Ingresá tu localidad</span
+                  >
+                </div>
+                <div class="form-group">
+                  <label class="form-label" for="provincia">Provincia</label>
+                  <input
+                    class="form-input"
+                    type="text"
+                    id="provincia"
+                    name="provincia"
+                    maxlength="100"
+                    placeholder="Ej: Río Negro"
+                    autocomplete="address-level1"
+                  />
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label" for="nota"
+                  >Nota para el pedido (opcional)</label
+                >
+                <textarea
+                  class="form-textarea"
+                  id="nota"
+                  name="nota"
+                  maxlength="500"
+                  placeholder="Ej: Aclarar alguna duda, preferencia de color alternativo..."
+                ></textarea>
+              </div>
+
+              <div
+                style="
+                  background: var(--gray-50);
+                  padding: 16px;
+                  margin-top: 8px;
+                  border-left: 3px solid var(--gray-300);
+                "
+              >
+                <p
+                  style="
+                    font-size: 12px;
+                    color: var(--gray-700);
+                    line-height: 1.7;
+                  "
+                >
+                  📱 <strong>¿Cómo sigue?</strong> Una vez que confirmes el
+                  pedido, te vamos a contactar por WhatsApp para verificar el
+                  stock, coordinar el envío y enviarte el link de pago de
+                  Mercado Pago.
+                </p>
+              </div>
+
+              <button type="submit" class="submit-btn">Enviar pedido →</button>
+            </form>
+          </div>
+
+          <!-- Order summary -->
+          <aside class="order-summary" id="order-summary">
+            <h3>Tu pedido</h3>
+            <div id="summary-items"></div>
+            <div class="order-divider"></div>
+            <div class="order-row">
+              <span>Subtotal</span><span id="summary-subtotal"></span>
+            </div>
+            <div class="order-row">
+              <span>Envío</span
+              ><span style="color: #5a9a2a; font-weight: 600">A coordinar</span>
+            </div>
+            <div class="order-total">
+              <span>Total</span><span id="summary-total"></span>
+            </div>
+          </aside>
+        </div>
       </div>
     </div>
-  </div>
 
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
-  <script src="js/supabase.js"></script>
-  <script src="js/data.js"></script>
-  <script src="js/theme.js"></script>
-  <script>
-    // ── Redirect if cart empty ─────────────────────────
-    const cart = getCarrito();
-    if (!cart.length) location.href = 'carrito.html';
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+    <script src="js/supabase.js"></script>
+    <script src="js/data.js"></script>
+    <script src="js/theme.js"></script>
+    <script>
+      // ── Redirect if cart empty ─────────────────────────
+      const cart = getCarrito();
+      if (!cart.length) location.href = "carrito.html";
 
-    // ── Render summary ─────────────────────────────────
-    document.getElementById('summary-items').innerHTML = cart.map(item => `
+      // ── Render summary ─────────────────────────────────
+      document.getElementById("summary-items").innerHTML = cart
+        .map(
+          (item) => `
       <div class="order-item">
         <div class="order-item-img">
           <img src="${item.imagen}" alt="${item.nombre}" loading="lazy"/>
@@ -337,69 +550,80 @@
         </div>
         <span class="order-item-price">${formatPrecio(item.precio * item.qty)}</span>
       </div>
-    `).join('');
+    `,
+        )
+        .join("");
 
-    const sub = totalCarrito();
-    document.getElementById('summary-subtotal').textContent = formatPrecio(sub);
-    document.getElementById('summary-total').textContent     = formatPrecio(sub);
+      const sub = totalCarrito();
+      document.getElementById("summary-subtotal").textContent =
+        formatPrecio(sub);
+      document.getElementById("summary-total").textContent = formatPrecio(sub);
 
-    actualizarBadge();
+      actualizarBadge();
 
-    // ── Form validation & submit ───────────────────────
-    const campos = ['nombre','whatsapp','direccion','localidad'];
+      // ── Form validation & submit ───────────────────────
+      const campos = ["nombre", "whatsapp", "direccion", "localidad"];
+      const minLen = { nombre: 2, whatsapp: 6, direccion: 3, localidad: 2 };
 
-    function validate() {
-      let ok = true;
-      campos.forEach(id => {
-        const input = document.getElementById(id);
-        const err   = document.getElementById('err-' + id);
-        const empty = !input.value.trim();
-        input.classList.toggle('error', empty);
-        err.classList.toggle('show', empty);
-        if (empty) ok = false;
-      });
-      return ok;
-    }
-
-    document.getElementById('checkout-form').addEventListener('submit', async (e) => {
-      e.preventDefault();
-      if (!validate()) return;
-
-      const pedido = {
-        nombre:    document.getElementById('nombre').value.trim(),
-        whatsapp:  document.getElementById('whatsapp').value.trim(),
-        direccion: document.getElementById('direccion').value.trim(),
-        localidad: document.getElementById('localidad').value.trim(),
-        provincia: document.getElementById('provincia').value.trim(),
-        nota:      document.getElementById('nota').value.trim(),
-        items:     cart,
-        total:     totalCarrito()
-      };
-
-      const btn = document.querySelector('.submit-btn');
-      btn.disabled = true;
-      btn.textContent = 'Enviando pedido...';
-
-      try {
-        const savedPedido = await db_guardarPedido(pedido);
-        sessionStorage.setItem('emma_pedido_confirmado', JSON.stringify(savedPedido));
-        vaciarCarrito();
-        location.href = 'pedido-confirmado.html';
-      } catch (err) {
-        console.error(err);
-        btn.disabled = false;
-        btn.textContent = 'Enviar pedido →';
-        alert('Hubo un error al enviar el pedido. Por favor intentá de nuevo.');
+      function validate() {
+        let ok = true;
+        campos.forEach((id) => {
+          const input = document.getElementById(id);
+          const err = document.getElementById("err-" + id);
+          const invalid = input.value.trim().length < minLen[id];
+          input.classList.toggle("error", invalid);
+          err.classList.toggle("show", invalid);
+          if (invalid) ok = false;
+        });
+        return ok;
       }
-    });
 
-    // Clear errors on input
-    campos.forEach(id => {
-      document.getElementById(id).addEventListener('input', function() {
-        this.classList.remove('error');
-        document.getElementById('err-'+id).classList.remove('show');
+      document
+        .getElementById("checkout-form")
+        .addEventListener("submit", async (e) => {
+          e.preventDefault();
+          if (!validate()) return;
+
+          const pedido = {
+            nombre: document.getElementById("nombre").value.trim(),
+            whatsapp: document.getElementById("whatsapp").value.trim(),
+            direccion: document.getElementById("direccion").value.trim(),
+            localidad: document.getElementById("localidad").value.trim(),
+            provincia: document.getElementById("provincia").value.trim(),
+            nota: document.getElementById("nota").value.trim(),
+            items: cart,
+            total: totalCarrito(),
+          };
+
+          const btn = document.querySelector(".submit-btn");
+          btn.disabled = true;
+          btn.textContent = "Enviando pedido...";
+
+          try {
+            const savedPedido = await db_guardarPedido(pedido);
+            sessionStorage.setItem(
+              "emma_pedido_confirmado",
+              JSON.stringify(savedPedido),
+            );
+            vaciarCarrito();
+            location.href = "pedido-confirmado.html";
+          } catch (err) {
+            console.error(err);
+            btn.disabled = false;
+            btn.textContent = "Enviar pedido →";
+            alert(
+              "Hubo un error al enviar el pedido. Por favor intentá de nuevo.",
+            );
+          }
+        });
+
+      // Clear errors on input
+      campos.forEach((id) => {
+        document.getElementById(id).addEventListener("input", function () {
+          this.classList.remove("error");
+          document.getElementById("err-" + id).classList.remove("show");
+        });
       });
-    });
-  </script>
-</body>
+    </script>
+  </body>
 </html>
