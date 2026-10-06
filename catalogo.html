@@ -396,8 +396,6 @@
         <a href="producto.html?id=${p.id}" class="product-card">
           <div class="product-card-image">
             <img src="${p.imagenes[0]}" alt="${p.nombre}" loading="lazy"/>
-            ${p.nuevo ? '<span class="product-card-badge">Nuevo</span>' : ''}
-            ${p.sale  ? '<span class="product-card-badge" style="background:#c0392b">Oferta</span>' : ''}
             <span class="product-card-quick">Ver producto</span>
           </div>
           <p class="product-card-name">${p.nombre}</p>
@@ -405,6 +403,7 @@
             ${p.precioAntes ? `<span class="old-price">${formatPrecio(p.precioAntes)}</span>` : ''}
             ${formatPrecio(p.precio)}
           </p>
+          ${(p.nuevo || p.sale) ? `<div class="product-card-tags">${p.nuevo ? '<span class="product-card-tag">Nuevo</span>' : ''}${p.sale ? '<span class="product-card-tag product-card-tag-sale">Oferta</span>' : ''}</div>` : ''}
         </a>
       `).join('');
     }

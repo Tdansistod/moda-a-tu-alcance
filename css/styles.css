@@ -523,10 +523,15 @@ button { cursor: pointer; font-family: var(--font-sans); border: none; backgroun
   transform: scale(1.04);
 }
 
-.product-card-badge {
-  position: absolute;
-  top: 12px;
-  left: 12px;
+/* Etiquetas (Nuevo / Oferta): debajo del precio, fuera de la imagen */
+.product-card-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.product-card-tag {
   background: var(--black);
   color: var(--white);
   font-size: 9px;
@@ -534,6 +539,11 @@ button { cursor: pointer; font-family: var(--font-sans); border: none; backgroun
   letter-spacing: 1px;
   text-transform: uppercase;
   padding: 4px 8px;
+}
+
+.product-card-tag-sale {
+  background: #c0392b;
+  color: #ffffff;
 }
 
 .product-card-quick {
