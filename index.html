@@ -14,6 +14,94 @@
   <meta name="twitter:image" content="https://pztftznwvrsoipiuhwof.supabase.co/storage/v1/object/public/assets/logo/logo-light.jpg"/>
   <script>(function(){var t=localStorage.getItem('emma_theme')||(window.matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light');document.documentElement.setAttribute('data-theme',t);})();</script>
   <link rel="stylesheet" href="css/styles.css" />
+  <style>
+    /* ── Home: hero compacto ── */
+    .home-hero { background: var(--gray-50); border-bottom: 1px solid var(--gray-100); padding: 28px 0; }
+    .home-hero-inner { display: grid; grid-template-columns: 1fr 300px; gap: 40px; align-items: center; }
+    .home-hero-title {
+      font-family: var(--font-serif);
+      font-size: clamp(28px, 4.5vw, 44px);
+      font-weight: 700;
+      line-height: 1.1;
+      margin-bottom: 10px;
+    }
+    .home-hero-sub { font-size: 15px; color: var(--gray-700); line-height: 1.6; max-width: 46ch; margin-bottom: 20px; }
+    .home-chips { display: flex; flex-wrap: wrap; gap: 10px; }
+    .home-chip {
+      display: inline-flex; align-items: center; justify-content: center;
+      min-height: 44px; padding: 0 22px;
+      font-size: 12px; font-weight: 600; letter-spacing: 1.2px; text-transform: uppercase;
+      color: var(--black); background: var(--white);
+      border: 1.5px solid var(--black);
+      transition: background 0.15s, color 0.15s;
+    }
+    .home-chip:hover, .home-chip:focus-visible { background: var(--black); color: var(--white); }
+    .home-chip-sale { color: #c0392b; border-color: #c0392b; }
+    .home-chip-sale:hover, .home-chip-sale:focus-visible { background: #c0392b; color: #fff; }
+    [data-theme="dark"] .home-chip-sale { color: #e8665a; border-color: #e8665a; }
+    [data-theme="dark"] .home-chip-sale:hover, [data-theme="dark"] .home-chip-sale:focus-visible { background: #e8665a; color: #000; }
+    .home-hero-img { aspect-ratio: 4 / 3; overflow: hidden; background: var(--gray-100); }
+    .home-hero-img img { width: 100%; height: 100%; object-fit: cover; display: block; }
+    [data-theme="dark"] .home-hero-img img { filter: brightness(0.75); }
+
+    /* ── Home: secciones de productos ── */
+    .home-section { padding: 36px 0 8px; }
+    .home-section-head { display: flex; align-items: baseline; justify-content: space-between; gap: 16px; margin-bottom: 18px; }
+    .home-section-title { font-family: var(--font-serif); font-size: clamp(20px, 3vw, 26px); font-weight: 700; }
+    .home-section-link {
+      font-size: 13px; font-weight: 600; color: var(--gray-700);
+      text-decoration: underline; text-underline-offset: 3px; white-space: nowrap;
+    }
+    .home-section-link:hover { color: var(--black); }
+    .home-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; }
+    .home-grid .product-card { min-width: 0; }
+    .home-more { text-align: center; padding: 28px 0 8px; }
+
+    /* ── Home: placeholders de carga ── */
+    .sk { background: var(--gray-100); position: relative; overflow: hidden; }
+    .sk::after {
+      content: ""; position: absolute; inset: 0;
+      background: linear-gradient(90deg, transparent, rgba(128,128,128,0.15), transparent);
+      transform: translateX(-100%);
+      animation: sk-shimmer 1.4s infinite;
+    }
+    @keyframes sk-shimmer { to { transform: translateX(100%); } }
+    .sk-img  { aspect-ratio: 3 / 4; }
+    .sk-line { height: 12px; margin-top: 10px; width: 70%; }
+    .sk-line.short { width: 40%; }
+
+    /* ── Home: error de carga ── */
+    .home-error { text-align: center; padding: 56px 16px; color: var(--gray-700); font-size: 14px; line-height: 1.7; }
+    .home-error .btn { margin: 14px 6px 0; }
+
+    /* ── Home: cómo comprar (franja compacta) ── */
+    .home-how { background: var(--gray-50); border-top: 1px solid var(--gray-100); border-bottom: 1px solid var(--gray-100); padding: 36px 0; margin-top: 48px; }
+    .home-how-head { display: flex; align-items: baseline; justify-content: space-between; gap: 16px; margin-bottom: 20px; }
+    .home-how-list { list-style: none; display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; counter-reset: paso; padding: 0; margin: 0; }
+    .home-how-list li { counter-increment: paso; display: flex; gap: 12px; align-items: flex-start; font-size: 14px; line-height: 1.6; color: var(--gray-700); }
+    .home-how-list li::before {
+      content: counter(paso);
+      flex-shrink: 0; width: 28px; height: 28px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 13px; font-weight: 700;
+      background: var(--black); color: var(--white);
+    }
+    .home-how-list strong { color: var(--black); }
+
+    @media (max-width: 768px) {
+      .home-hero-inner { grid-template-columns: 1fr; }
+      .home-hero-img { display: none; }
+      .home-grid { grid-template-columns: repeat(2, 1fr); gap: 12px; }
+      .home-section { padding-top: 28px; }
+      .home-how-list { grid-template-columns: 1fr; gap: 16px; }
+    }
+    @media (max-width: 480px) {
+      .announcement-bar { font-size: 10px; letter-spacing: 0.8px; padding: 8px 12px; }
+      .home-hero { padding: 22px 0; }
+      .home-chips { display: grid; grid-template-columns: 1fr 1fr; }
+      .home-chip { padding: 0 8px; }
+    }
+  </style>
 </head>
 <body>
 
@@ -76,104 +164,56 @@
     </nav>
   </header>
 
-  <!-- ── Hero ─────────────────────────────────────── -->
-  <section class="hero">
-    <div class="hero-bg"></div>
-
+  <!-- ── Hero compacto + accesos directos ─────────── -->
+  <section class="home-hero">
     <div class="container">
-      <div class="hero-inner">
-
-        <div class="hero-content">
-          <span class="hero-tag">Nueva colección 2026</span>
-          <h1 class="hero-title">
-            Tu estilo,<br>
-            <em>tu historia.</em>
-          </h1>
-          <p class="hero-subtitle">
-            Diseños únicos para que brilles con tu propia luz.
-            Ropa de calidad, precio justo y envío a todo el país.
-          </p>
-          <div class="hero-actions">
-            <a href="catalogo.html" class="btn btn-dark">Ver nueva colección</a>
-            <a href="catalogo.html?sale=1" class="btn btn-outline">Ver ofertas</a>
-          </div>
+      <div class="home-hero-inner">
+        <div class="home-hero-text">
+          <h1 class="home-hero-title">Ropa para mujer y hombre</h1>
+          <p class="home-hero-sub">Elegí tus prendas y coordinamos el pago y el envío por WhatsApp.</p>
+          <nav class="home-chips" id="categorias" aria-label="Categorías">
+            <a href="catalogo.html?genero=mujer" class="home-chip">Mujer</a>
+            <a href="catalogo.html?genero=hombre" class="home-chip">Hombre</a>
+            <a href="catalogo.html?cat=maquillaje" class="home-chip">Maquillaje</a>
+            <a href="catalogo.html?sale=1" class="home-chip home-chip-sale">Ofertas</a>
+          </nav>
         </div>
-
-        <!-- Imagen decorativa del hero -->
-        <div class="hero-image-panel">
+        <div class="home-hero-img">
           <img
             src="https://pztftznwvrsoipiuhwof.supabase.co/storage/v1/object/public/assets/hero/hero.jpg"
             alt="Look de temporada"
+            loading="lazy"
+            decoding="async"
           />
-          <span class="hero-image-label">Temporada Otoño 2026</span>
         </div>
-
       </div>
     </div>
   </section>
 
-  <!-- ── Categories ───────────────────────────────── -->
-  <section class="section" id="categorias">
+  <!-- ── Productos (nuevos, ofertas, destacados) ───── -->
+  <div class="container" id="home-products" aria-live="polite">
+    <section class="home-section" aria-label="Cargando productos">
+      <div class="home-grid">
+        <div><div class="sk sk-img"></div><div class="sk sk-line"></div><div class="sk sk-line short"></div></div>
+        <div><div class="sk sk-img"></div><div class="sk sk-line"></div><div class="sk sk-line short"></div></div>
+        <div><div class="sk sk-img"></div><div class="sk sk-line"></div><div class="sk sk-line short"></div></div>
+        <div><div class="sk sk-img"></div><div class="sk sk-line"></div><div class="sk sk-line short"></div></div>
+      </div>
+    </section>
+  </div>
+
+  <!-- ── Cómo comprar (franja compacta) ───────────── -->
+  <section class="home-how">
     <div class="container">
-      <div class="section-header">
-        <span class="section-tag">Explorá nuestra tienda</span>
-        <h2 class="section-title">Categorías</h2>
+      <div class="home-how-head">
+        <h2 class="home-section-title">Comprar es simple</h2>
+        <a href="faq.html#como-comprar" class="home-section-link">Más sobre cómo comprar</a>
       </div>
-
-      <div class="categories-grid" id="categories-grid"></div>
-    </div>
-  </section>
-
-  <!-- ── How It Works ─────────────────────────────── -->
-  <section class="how-it-works">
-    <div class="container">
-      <div class="section-header">
-        <span class="section-tag">Simple y rápido</span>
-        <h2 class="section-title">¿Cómo funciona?</h2>
-      </div>
-
-      <div class="steps-grid">
-
-        <div class="step">
-          <div class="step-icon">🛍️</div>
-          <p class="step-number">Paso 01</p>
-          <h3 class="step-title">Elegí tu look</h3>
-          <p class="step-desc">Explorá el catálogo, elegí tus prendas favoritas y sumalas al carrito.</p>
-        </div>
-
-        <div class="step">
-          <div class="step-icon">📋</div>
-          <p class="step-number">Paso 02</p>
-          <h3 class="step-title">Confirmá el pedido</h3>
-          <p class="step-desc">Completá tus datos y envianos el pedido. Revisamos el stock y te contactamos.</p>
-        </div>
-
-        <div class="step">
-          <div class="step-icon">🚚</div>
-          <p class="step-number">Paso 03</p>
-          <h3 class="step-title">Recibilo en casa</h3>
-          <p class="step-desc">Coordinamos el envío y el pago por WhatsApp. Rápido, seguro y sin complicaciones.</p>
-        </div>
-
-      </div>
-    </div>
-  </section>
-
-  <!-- ── Destacados ───────────────────────────────── -->
-  <section class="products-strip">
-    <div class="container">
-      <div class="section-header">
-        <span class="section-tag">Lo más visto</span>
-        <h2 class="section-title">Productos destacados</h2>
-      </div>
-
-      <div class="products-row" id="featured-products">
-        <!-- cargado dinámicamente desde Supabase -->
-      </div>
-
-      <div style="text-align:center; margin-top:40px;">
-        <a href="catalogo.html" class="btn btn-outline">Ver todo el catálogo</a>
-      </div>
+      <ol class="home-how-list">
+        <li><span><strong>Elegí</strong> tus prendas y sumalas al carrito.</span></li>
+        <li><span><strong>Enviá el pedido</strong> con tus datos. Revisamos el stock y te escribimos.</span></li>
+        <li><span><strong>Coordinamos</strong> el pago y el envío por WhatsApp.</span></li>
+      </ol>
     </div>
   </section>
 
@@ -293,7 +333,6 @@
   <script src="js/supabase.js"></script>
   <script src="js/data.js"></script>
   <script src="js/theme.js"></script>
-  <script src="js/categories.js"></script>
   <script>
     // Mobile menu toggle
     const hamburger = document.getElementById('hamburger-btn');
@@ -307,46 +346,86 @@
     // Cart badge
     actualizarBadge();
 
-    // Cargar y renderizar productos destacados
-    async function init() {
-      await loadProductos();
-      const destacados = getProductos({ destacado: true }).slice(0, 4);
-      const container  = document.getElementById('featured-products');
+    // ── Secciones de la home ──────────────────────────
+    // Se muestran en este orden. Un producto aparece una sola vez
+    // (en la primera sección que lo incluya). Las vacías se omiten.
+    const POR_SECCION = 4;
+    const SECCIONES = [
+      { titulo: 'Nuevos ingresos', href: 'catalogo.html',        filtro: p => p.nuevo },
+      { titulo: 'Ofertas',         href: 'catalogo.html?sale=1', filtro: p => p.sale },
+      { titulo: 'Destacados',      href: 'catalogo.html',        filtro: p => p.destacado }
+    ];
 
-      if (!destacados.length) {
-        container.innerHTML = '<p style="color:var(--gray-500);font-size:13px;grid-column:1/-1;text-align:center;padding:40px 0;">No hay productos destacados.</p>';
-        return;
-      }
+    function esc(s) {
+      return String(s ?? '').replace(/[&<>"']/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c]));
+    }
 
-      container.innerHTML = destacados.map(p => `
+    function tarjeta(p, eager) {
+      const img = (p.imagenes || [])[0] || '';
+      return `
         <a href="producto.html?id=${p.id}" class="product-card">
           <div class="product-card-image">
-            <img src="${p.imagenes[0]}" alt="${p.nombre}" loading="lazy"/>
+            <img src="${esc(img)}" alt="${esc(p.nombre)}" ${eager ? '' : 'loading="lazy"'} decoding="async"/>
             ${p.nuevo ? '<span class="product-card-badge">Nuevo</span>' : ''}
             ${p.sale  ? '<span class="product-card-badge" style="background:#c0392b">Oferta</span>' : ''}
             <span class="product-card-quick">Ver producto</span>
           </div>
-          <p class="product-card-name">${p.nombre}</p>
+          <p class="product-card-name">${esc(p.nombre)}</p>
           <p class="product-card-price">
             ${p.precioAntes ? `<span class="old-price">${formatPrecio(p.precioAntes)}</span>` : ''}
             ${formatPrecio(p.precio)}
           </p>
-        </a>
-      `).join('');
+        </a>`;
+    }
+
+    function seccion({ titulo, href }, lista, eager) {
+      return `
+        <section class="home-section">
+          <div class="home-section-head">
+            <h2 class="home-section-title">${titulo}</h2>
+            <a href="${href}" class="home-section-link">Ver todo</a>
+          </div>
+          <div class="home-grid">${lista.map(p => tarjeta(p, eager)).join('')}</div>
+        </section>`;
+    }
+
+    async function init() {
+      const mount = document.getElementById('home-products');
+      await loadProductos();
+
+      // Sin productos: error de conexión o tienda vacía
+      if (!PRODUCTOS.length) {
+        mount.innerHTML = `
+          <div class="home-error">
+            <p>No pudimos cargar los productos en este momento.</p>
+            <button class="btn btn-dark" onclick="location.reload()">Reintentar</button>
+            <a class="btn btn-outline" href="https://wa.me/5492944486963" target="_blank" rel="noopener">Consultar por WhatsApp</a>
+          </div>`;
+        return;
+      }
+
+      const usados = new Set();
+      let html = '';
+      let primera = true;
+
+      SECCIONES.forEach(s => {
+        const lista = PRODUCTOS.filter(p => s.filtro(p) && !usados.has(p.id)).slice(0, POR_SECCION);
+        if (!lista.length) return;
+        lista.forEach(p => usados.add(p.id));
+        html += seccion(s, lista, primera);
+        primera = false;
+      });
+
+      // Si no hay nuevos / ofertas / destacados, mostrar lo último cargado
+      if (!html) {
+        html = seccion({ titulo: 'Catálogo', href: 'catalogo.html' }, PRODUCTOS.slice(0, POR_SECCION * 2), true);
+      }
+
+      html += '<div class="home-more"><a href="catalogo.html" class="btn btn-outline">Ver todo el catálogo</a></div>';
+      mount.innerHTML = html;
     }
 
     init();
-
-    // Renderizar grilla de categorías desde config central
-    document.getElementById('categories-grid').innerHTML = CATEGORIES.map(c => `
-      <a href="catalogo.html?cat=${c.slug}" class="category-card">
-        <img src="${c.imagen}" alt="${c.nombre}" loading="lazy"/>
-        <div class="category-card-overlay">
-          <span class="category-card-name">${c.nombre}</span>
-          <span class="category-card-link">${c.cta}</span>
-        </div>
-      </a>
-    `).join('');
   </script>
 
 </body>
