@@ -1,0 +1,2483 @@
+diff --git a/.github/workflows/keep-supabase-alive.yml b/.github/workflows/keep-supabase-alive.yml
+deleted file mode 100644
+index a70fcf0..0000000
+--- a/.github/workflows/keep-supabase-alive.yml
++++ /dev/null
+@@ -1,17 +0,0 @@
+-name: Keep Supabase alive
+-
+-on:
+-  schedule:
+-    - cron: "0 12 * * *" # todos los días a las 12:00 UTC
+-  workflow_dispatch: # permite ejecutarlo a mano para probar
+-
+-jobs:
+-  ping:
+-    runs-on: ubuntu-latest
+-    steps:
+-      - name: Query products table
+-        run: |
+-          curl --fail --silent --show-error \
+-            "https://pztftznwvrsoipiuhwof.supabase.co/rest/v1/products?select=id&limit=1" \
+-            -H "apikey: ${{ secrets.SUPABASE_ANON_KEY }}" \
+-            -H "Authorization: Bearer ${{ secrets.SUPABASE_ANON_KEY }}"
+diff --git a/.vercelignore b/.vercelignore
+new file mode 100644
+index 0000000..9006467
+--- /dev/null
++++ b/.vercelignore
+@@ -0,0 +1,3 @@
++admin
++CLAUDE.md
++.github
+diff --git a/CLAUDE.md b/CLAUDE.md
+index 8915589..14abd33 100644
+--- a/CLAUDE.md
++++ b/CLAUDE.md
+@@ -9,10 +9,12 @@ Tienda de indumentaria online para mujeres y hombres. Static site (HTML/CSS/JS v
+ | Capa | Tecnología |
+ |------|-----------|
+ | Frontend | HTML + CSS + JS vanilla (sin framework, sin build step) |
+-| Base de datos | Supabase (PostgreSQL) |
+-| Storage | Supabase Storage (bucket `assets`, carpeta `logo/`, imágenes de productos) |
+-| Deploy | Vercel (static hosting) |
+-| Autenticación admin | Supabase Auth (`db.auth.signInWithPassword`) + RLS en todas las tablas |
++| Datos | `data/products.json` (versionado en git) |
++| Medios | Archivos estáticos en `/assets` (imágenes `.webp`, videos `.webm`) |
++| Deploy | Vercel (static hosting, redeploy automático en cada push a `main`) |
++| Admin | Servidor Node local (`admin/server.js`, sin dependencias) — **no se despliega** |
++
++Ya no hay Supabase, base de datos ni backend en producción.
+ 
+ ---
+ 
+@@ -20,74 +22,62 @@ Tienda de indumentaria online para mujeres y hombres. Static site (HTML/CSS/JS v
+ 
+ ```
+ /
+-├── index.html              # Página principal (hero, productos destacados, categorías)
+-├── catalogo.html           # Catálogo con filtros (categoría, género, talle, sale)
+-├── producto.html           # Detalle de producto (?id=N)
++├── index.html              # Página principal
++├── catalogo.html           # Catálogo con filtros
++├── producto.html           # Detalle (?id=N): galería con videos primero y luego imágenes
+ ├── carrito.html            # Carrito (localStorage)
+-├── checkout.html           # Formulario de datos de entrega + guardar pedido en Supabase
+-├── pedido-confirmado.html  # Confirmación con botón "Coordinar por WhatsApp"
++├── checkout.html           # Datos de entrega → arma el pedido en el navegador
++├── pedido-confirmado.html  # Botón "Coordinar por WhatsApp" con el pedido armado
++├── data/products.json      # CATÁLOGO (lo edita el panel local)
++├── assets/
++│   ├── logo/ hero/ instagram/ category-images/   # estáticos del sitio
++│   └── products/           # medios de productos (los gestiona el panel; no editar a mano)
+ ├── admin/
+-│   ├── login.html          # Login admin (Supabase Auth — email + contraseña)
+-│   └── dashboard.html      # CRUD de productos + visualización de pedidos
+-├── css/
+-│   └── styles.css          # Único archivo CSS — variables, componentes, dark mode
++│   ├── server.js           # Servidor local: preview + API + git publish
++│   └── dashboard.html      # Panel de productos (solo local)
++├── css/styles.css
+ └── js/
+-    ├── supabase.js         # Cliente Supabase + helpers de DB (productos, pedidos)
+-    ├── data.js             # Carrito (localStorage), formatPrecio, auth admin
+-    └── theme.js            # toggleTheme() — dark/light
++    ├── catalog.js          # loadProductos() (fetch del JSON), getProductos(), cardMedia()
++    ├── video-limiter.js    # Máx. 4 videos a la vez en escritorio, 2 en móvil (a la vista)
++    ├── categories.js       # Categorías (slug, nombre, imagen)
++    ├── data.js             # Carrito (localStorage) y formatPrecio
++    └── theme.js            # dark/light
+ ```
+ 
+ ---
+ 
+-## Supabase
+-
+-**Proyecto:** `pztftznwvrsoipiuhwof`
+-**URL:** `https://pztftznwvrsoipiuhwof.supabase.co`
+-**Anon key:** hardcodeada en `js/supabase.js` (es pública por diseño — no hay secretos aquí)
++## Catálogo (`data/products.json`)
+ 
+-### Tablas
+-
+-**`products`**
++Array de productos, el más nuevo primero. **No editar a mano**: usar el panel (valida y limpia archivos huérfanos).
+ ```
+-id          serial PK
+-nombre      text
+-descripcion text
+-precio      numeric
+-precioAntes numeric (nullable, precio tachado)
+-categoria   text  — 'mujer' | 'hombre' | 'maquillaje'
+-genero      text  — 'mujer' | 'hombre' | 'unisex'
+-talles      text[]
+-colores     text[]
+-imagenes    text[]  (URLs de Supabase Storage)
+-destacado   boolean
+-nuevo       boolean
+-sale        boolean
+-created_at  timestamptz
++id          int (único, correlativo)
++nombre, descripcion
++precio, precioAntes (null si no hay oferta)
++categoria   slug de js/categories.js
++genero      'mujer' | 'hombre' | 'unisex'
++talles[], colores[]
++imagenes[]  rutas '/assets/products/xxx.webp' (la 1ra es la principal y el fallback del video)
++videos[]    rutas '/assets/products/xxx.webm' (opcional)
++destacado, nuevo, sale  booleanos
++created_at  ISO
+ ```
+ 
+-**`orders`**
++## Panel de admin (solo local)
++
+ ```
+-id          serial PK
+-nombre      text
+-whatsapp    text
+-direccion   text
+-localidad   text
+-provincia   text
+-nota        text
+-items       jsonb  (array de { key, id, nombre, precio, imagen, talle, color, qty })
+-total       numeric
+-estado      text — 'pendiente' | 'confirmado' | 'enviado' | 'cancelado'
+-created_at  timestamptz
++node admin/server.js        # → http://localhost:3000/admin/
+ ```
++- Crear/editar/eliminar productos: escribe `data/products.json` y guarda los medios en `assets/products/`.
++- Imágenes: se redimensionan a 1600 px y se convierten a WebP en el navegador antes de subir.
++- Videos: solo `.webm`, máx. 20 MB, idealmente 3:4 y sin audio.
++- **Publicar cambios** = `git add` (solo `data/` y `assets/products/`) + commit + push → Vercel redeploya.
++- Seguridad: escucha solo en 127.0.0.1, valida `Host` y exige el header `X-Emma-Admin`. `/admin/*` redirige a `/` en Vercel y está en `.vercelignore`.
+ 
+-### Storage
++## Videos
+ 
+-- Bucket: `assets` (público)
+-- Logos: `assets/logo/logo-dark.jpg` y `assets/logo/logo-light.jpg`
+-- Imágenes de productos: `assets/product-images/...`
+-- URLs permanentes (no expiran): `https://pztftznwvrsoipiuhwof.supabase.co/storage/v1/object/public/assets/[path]`
+-
+----
++- Carta: `<img>` + `<video data-autoplay muted loop playsinline preload="none">` encima, invisible hasta que arranca. Si el navegador no soporta WebM queda la imagen.
++- Detalle: los videos van primero en la galería, después las imágenes.
++- `video-limiter.js` (IntersectionObserver): cuenta solo videos con ≥50% visible; si hay más que el máximo (4 escritorio / 2 móvil ≤768px) reproduce los primeros en orden de lectura. Respeta `prefers-reduced-motion`. Los videos agregados dinámicamente se detectan solos.
+ 
+ ## Sistema de temas (dark/light)
+ 
+@@ -113,19 +103,8 @@ created_at  timestamptz
+ 
+ 1. Usuario agrega al carrito → `localStorage`
+ 2. Checkout → formulario de datos personales
+-3. Submit → `db_guardarPedido()` → guarda en tabla `orders` con `estado: 'pendiente'`
+-4. Redirige a `pedido-confirmado.html` con datos en `sessionStorage` (`emma_pedido_confirmado`)
+-5. Confirmación muestra botón "Coordinar por WhatsApp" con mensaje prefabricado al número `5492944486963`
+-
+----
+-
+-## Admin
+-
+-- URL: `/admin/login.html`
+-- Autenticación via Supabase Auth (`db.auth.signInWithPassword`); usuario creado en el dashboard de Supabase
+-- Dashboard: CRUD de productos (crear, editar, eliminar) + listar pedidos + cambiar estado
+-- Sin tema toggle (admin excluido del sistema dark/light)
+-- Imágenes de productos: upload directo a Supabase Storage bucket `assets/product-images/`
++3. Submit → se arma el pedido en el navegador (id local, **no se guarda en ningún servidor**) y va a `pedido-confirmado.html` vía `sessionStorage` (`emma_pedido_confirmado`)
++4. El pedido recién existe cuando el cliente toca "Coordinar por WhatsApp" (mensaje prefabricado al `5492944486963`)
+ 
+ ---
+ 
+@@ -138,28 +117,20 @@ created_at  timestamptz
+ 
+ ---
+ 
+-## Lo que queda pendiente (backlog conocido)
+-
+-- [ ] Variables de entorno en Vercel (no crítico — el anon key es público y el sitio es 100% estático sin build step)
+-- [ ] Posible migración a build tool (Vite) si se necesitan env vars reales o módulos ES
+-
+----
+-
+ ## Historial de cambios relevantes
+ 
++### Migración fuera de Supabase
++- Productos → `data/products.json`; medios → `/assets`; pedidos → solo WhatsApp; admin → local con git push.
++- Se eliminó `js/supabase.js`, `admin/login.html` y el workflow `keep-supabase-alive`.
++- `og:image` usa URL absoluta (`https://moda-a-tu-alcance.vercel.app/assets/logo/logo-light.jpg`); si cambia el dominio, actualizarla en index/catálogo/producto.
++- Videos `.webm` en cartas y detalle con límite de reproducción simultánea.
++
+ ### Dark mode — negro puro
+-- `--white` en dark mode cambiado a `#000000` (antes `#0f0f0f`) para que el fondo del header coincida con el fondo del logo-dark
+-- Footer y announcement bar también usan `#000000`
+-- Hero gradient oscuro termina en `#000000`
+-- Los grays intermedios (`--gray-50`, `--gray-100`, `--gray-300`) se ajustaron para mantener contraste
++- `--white` en dark mode cambiado a `#000000`; footer, announcement bar y hero gradient también.
++- Los grays intermedios se ajustaron para mantener contraste.
+ 
+ ### Favicon
+-- Archivo: `/favicon.svg`
+-- Diseño: anteojos de sol minimalistas, fondo negro `#111` con trazo crema `#f0ede8`
+-- Agregado en todas las páginas públicas (index, catálogo, producto, carrito, checkout, pedido-confirmado)
+-- Admin excluido (sin favicon intencional)
+-
+-### Open Graph / Share image
+-- `og:image` y `twitter:image` apuntan a `logo-light.jpg` en Supabase Storage
+-- OG tags completos en: `index.html`, `catalogo.html`, `producto.html`
+-- Carrito, checkout y pedido-confirmado solo tienen favicon (no se comparten en redes)
++- `/favicon.svg` (anteojos de sol minimalistas) en todas las páginas públicas.
++
++### Open Graph
++- `og:image` / `twitter:image` en `index.html`, `catalogo.html`, `producto.html`.
+diff --git a/admin/dashboard.html b/admin/dashboard.html
+index 4df3110..ce504b9 100644
+--- a/admin/dashboard.html
++++ b/admin/dashboard.html
+@@ -3,9 +3,9 @@
+ <head>
+   <meta charset="UTF-8"/>
+   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+-  <title>Dashboard — Emma Admin</title>
++  <title>Catálogo — Emma Admin (local)</title>
+   <link rel="icon" type="image/svg+xml" href="/favicon.svg"/>
+-  <link rel="stylesheet" href="../css/styles.css"/>
++  <link rel="stylesheet" href="/css/styles.css"/>
+   <style>
+     * { box-sizing: border-box; }
+     body { background: #f4f4f6; min-height: 100vh; overflow-x: hidden; }
+@@ -543,166 +543,38 @@
+       .modal-footer .btn,
+       .modal-footer .action-btn { flex: 1; text-align: center; justify-content: center; }
+     }
++    .img-thumb video { display:block; }
++    .img-thumb-remove { z-index: 2; }
+   </style>
+ </head>
+-<body style="display:none">
+-
+-  <!-- ── Admin Header ── -->
++<body>
+   <header class="admin-header">
+     <div class="admin-header-left">
+-      <button class="admin-hamburger" id="mobile-menu-btn" onclick="toggleMobileMenu()" aria-label="Menú">
+-        <span></span><span></span><span></span>
+-      </button>
+-      <img src="https://pztftznwvrsoipiuhwof.supabase.co/storage/v1/object/public/assets/logo/logo-dark.jpg" alt="Emma" class="admin-logo"/>
++      <img src="/assets/logo/logo-dark.jpg" alt="Emma" class="admin-logo"/>
++      <span class="admin-badge">Panel local</span>
++    </div>
++    <div class="admin-header-right">
++      <span id="pending-badge" style="font-size:12px;color:rgba(255,255,255,.7)"></span>
++      <a href="/" target="_blank" style="font-size:12px;color:#fff;text-decoration:underline">Ver sitio</a>
++      <button class="btn btn-light" style="padding:8px 18px;background:#fff;color:#111" onclick="openPublish()">Publicar cambios</button>
+     </div>
+   </header>
+ 
+-  <!-- ── Mobile nav ── -->
+-  <nav class="mobile-nav" id="mobile-nav">
+-    <p class="mobile-nav-section">Menú</p>
+-    <button class="sidebar-link active" id="mnav-pedidos" onclick="switchTab('pedidos', this); closeMobileMenu()">
+-      <span class="icon">📦</span> Pedidos
+-      <span class="sidebar-badge" id="pending-badge-mobile">0</span>
+-    </button>
+-    <button class="sidebar-link" id="mnav-productos" onclick="switchTab('productos', this); closeMobileMenu()">
+-      <span class="icon">👕</span> Productos
+-    </button>
+-    <div style="margin:8px 0;border-top:1px solid #f0f0f4;"></div>
+-    <p class="mobile-nav-section">Accesos</p>
+-    <a href="../index.html" class="sidebar-link" target="_blank" onclick="closeMobileMenu()">
+-      <span class="icon">🏠</span> Tienda
+-    </a>
+-    <a href="../catalogo.html" class="sidebar-link" target="_blank" onclick="closeMobileMenu()">
+-      <span class="icon">🛍️</span> Catálogo
+-    </a>
+-    <div style="margin:8px 0;border-top:1px solid #f0f0f4;"></div>
+-    <button class="sidebar-link" style="color:#c0392b;" onclick="logout()">
+-      <span class="icon">🚪</span> Cerrar sesión
+-    </button>
+-  </nav>
+-  <div class="mobile-nav-overlay" id="mobile-nav-overlay" onclick="closeMobileMenu()"></div>
+-
+-  <div class="admin-layout">
+-
+-    <!-- ── Sidebar ── -->
+-    <aside class="admin-sidebar">
+-      <p class="sidebar-menu-title" style="margin-top:8px;">Menú</p>
+-      <button class="sidebar-link active" onclick="switchTab('pedidos', this)">
+-        <span class="icon">📦</span> Pedidos
+-        <span class="sidebar-badge" id="pending-badge">0</span>
+-      </button>
+-      <button class="sidebar-link" onclick="switchTab('productos', this)">
+-        <span class="icon">👕</span> Productos
+-      </button>
+-      <div style="margin:20px 0 8px;border-top:1px solid #f0f0f4;"></div>
+-      <p class="sidebar-menu-title">Accesos</p>
+-      <a href="../index.html" class="sidebar-link" target="_blank">
+-        <span class="icon">🏠</span> Tienda
+-      </a>
+-      <a href="../catalogo.html" class="sidebar-link" target="_blank">
+-        <span class="icon">🛍️</span> Catálogo
+-      </a>
+-      <div style="margin:20px 0 8px;border-top:1px solid #f0f0f4;"></div>
+-      <button class="sidebar-link" style="color:#c0392b;" onclick="logout()">
+-        <span class="icon">🚪</span> Cerrar sesión
+-      </button>
+-    </aside>
+-
+-    <!-- ── Main ── -->
+-    <main class="admin-main">
+-
+-      <!-- Stats -->
+-      <div class="stats-grid" id="stats-grid"></div>
+-
+-      <!-- Tabs -->
+-      <div class="tabs">
+-        <button class="tab-btn active" id="tab-btn-pedidos"   onclick="switchTab('pedidos', this)">Pedidos</button>
+-        <button class="tab-btn"        id="tab-btn-productos" onclick="switchTab('productos', this)">Productos</button>
+-      </div>
+-
+-      <!-- ── PEDIDOS ── -->
+-      <div class="tab-panel active" id="panel-pedidos">
+-        <div class="toolbar">
+-          <input class="search-input" type="search" id="search-pedidos" placeholder="Buscar por nombre o #pedido..." oninput="filterPedidos()"/>
+-          <select class="search-input" style="min-width:auto;" id="filter-estado" onchange="filterPedidos()">
+-            <option value="">Todos los estados</option>
+-            <option value="pendiente">Pendientes</option>
+-            <option value="confirmado">Confirmados</option>
+-            <option value="enviado">Enviados</option>
+-            <option value="entregado">Entregados</option>
+-            <option value="cancelado">Cancelados</option>
+-          </select>
+-        </div>
+-        <div class="table-scroll">
+-          <table class="data-table" id="orders-table">
+-            <thead>
+-              <tr>
+-                <th>#</th>
+-                <th>Fecha</th>
+-                <th>Cliente</th>
+-                <th>WhatsApp</th>
+-                <th>Localidad</th>
+-                <th>Total</th>
+-                <th>Estado</th>
+-                <th>Acciones</th>
+-              </tr>
+-            </thead>
+-            <tbody id="orders-body"></tbody>
+-          </table>
+-        </div>
+-      </div>
+-
+-      <!-- ── PRODUCTOS ── -->
+-      <div class="tab-panel" id="panel-productos">
+-        <div class="toolbar">
+-          <input class="search-input" type="search" id="search-productos" placeholder="Buscar producto..." oninput="filterProductos()"/>
+-          <button class="btn btn-dark" style="padding:10px 20px;" onclick="openProductModal()">
+-            + Nuevo producto
+-          </button>
+-        </div>
+-        <div class="table-scroll">
+-          <table class="data-table" id="products-table">
+-            <thead>
+-              <tr>
+-                <th></th>
+-                <th>Nombre</th>
+-                <th>Categoría</th>
+-                <th>Precio</th>
+-                <th>Talles</th>
+-                <th>Colores</th>
+-                <th>Estado</th>
+-                <th>Acciones</th>
+-              </tr>
+-            </thead>
+-            <tbody id="products-body"></tbody>
+-          </table>
+-        </div>
+-      </div>
+-
+-    </main>
+-  </div>
+-
+-  <!-- ── Modal Pedido ── -->
+-  <div class="modal-overlay" id="order-modal">
+-    <div class="modal">
+-      <div class="modal-header">
+-        <h3 id="order-modal-title">Detalle del pedido</h3>
+-        <button class="modal-close" onclick="closeModal('order-modal')">×</button>
+-      </div>
+-      <div class="modal-body" id="order-modal-body"></div>
+-      <div class="modal-footer">
+-        <select class="mform-select" style="min-width:180px;" id="order-status-select">
+-          <option value="pendiente">Pendiente</option>
+-          <option value="confirmado">Confirmado</option>
+-          <option value="enviado">Enviado</option>
+-          <option value="entregado">Entregado</option>
+-          <option value="cancelado">Cancelado</option>
+-        </select>
+-        <button class="btn btn-dark" style="padding:10px 20px;" onclick="saveOrderStatus()">Guardar estado</button>
+-        <button class="action-btn action-btn-ghost" onclick="closeModal('order-modal')">Cerrar</button>
+-      </div>
++  <main class="admin-main" style="max-width:1200px;margin:0 auto">
++    <p style="font-size:12px;color:#888;margin-bottom:16px">
++      Los cambios se guardan en tu carpeta local al instante. Recién se ven online cuando tocás <strong>Publicar cambios</strong> (commit + push → Vercel).
++    </p>
++    <div class="toolbar">
++      <input class="search-input" type="search" id="search-productos" placeholder="Buscar producto..." oninput="renderProductos()"/>
++      <button class="btn btn-dark" style="padding:10px 20px;" onclick="openProductModal()">+ Nuevo producto</button>
+     </div>
+-  </div>
++    <div class="table-scroll">
++      <table class="data-table">
++        <thead><tr><th></th><th>Nombre</th><th>Categoría</th><th>Precio</th><th>Talles</th><th>Colores</th><th>Medios</th><th>Estado</th><th>Acciones</th></tr></thead>
++        <tbody id="products-body"></tbody>
++      </table>
++    </div>
++  </main>
+ 
+   <!-- ── Modal Producto ── -->
+   <div class="modal-overlay" id="product-modal">
+@@ -712,522 +584,271 @@
+         <button class="modal-close" onclick="closeModal('product-modal')">×</button>
+       </div>
+       <div class="modal-body">
+-        <form id="product-form">
++        <form id="product-form" onsubmit="return false">
+           <div class="mform-row">
+-            <div class="mform-group">
+-              <label class="mform-label">Nombre *</label>
+-              <input class="mform-input" type="text" id="p-nombre" placeholder="Ej: Jogger Oversize Gris" required/>
+-            </div>
+-            <div class="mform-group">
+-              <label class="mform-label">Categoría *</label>
+-              <select class="mform-select" id="p-categoria"></select>
+-            </div>
++            <div class="mform-group"><label class="mform-label">Nombre *</label><input class="mform-input" type="text" id="p-nombre" placeholder="Ej: Jogger Oversize Gris"/></div>
++            <div class="mform-group"><label class="mform-label">Categoría *</label><select class="mform-select" id="p-categoria"></select></div>
+           </div>
+           <div class="mform-row">
+-            <div class="mform-group">
+-              <label class="mform-label">Género *</label>
+-              <select class="mform-select" id="p-genero">
+-                <option value="mujer">Mujer</option>
+-                <option value="hombre">Hombre</option>
+-                <option value="unisex">Unisex</option>
+-              </select>
+-            </div>
+-            <div class="mform-group">
+-              <label class="mform-label">Precio (ARS) *</label>
+-              <input class="mform-input" type="number" id="p-precio" placeholder="28000" min="0"/>
+-            </div>
++            <div class="mform-group"><label class="mform-label">Género *</label>
++              <select class="mform-select" id="p-genero"><option value="mujer">Mujer</option><option value="hombre">Hombre</option><option value="unisex">Unisex</option></select></div>
++            <div class="mform-group"><label class="mform-label">Precio (ARS) *</label><input class="mform-input" type="number" id="p-precio" min="0" placeholder="28000"/></div>
+           </div>
+-          <div class="mform-group">
+-            <label class="mform-label">Precio anterior (dejar vacío si no hay oferta)</label>
+-            <input class="mform-input" type="number" id="p-precio-antes" placeholder="35000" min="0"/>
++          <div class="mform-group"><label class="mform-label">Precio anterior (vacío si no hay oferta)</label><input class="mform-input" type="number" id="p-precio-antes" min="0" placeholder="35000"/></div>
++          <div class="mform-group"><label class="mform-label">Descripción</label><textarea class="mform-textarea" id="p-descripcion"></textarea></div>
++          <div class="mform-row">
++            <div class="mform-group"><label class="mform-label">Talles</label><input class="mform-input" type="text" id="p-talles" placeholder="XS, S, M, L, XL"/><p class="mform-hint">Separados por coma</p></div>
++            <div class="mform-group"><label class="mform-label">Colores</label><input class="mform-input" type="text" id="p-colores" placeholder="Negro, Gris, Blanco"/><p class="mform-hint">Separados por coma</p></div>
+           </div>
+           <div class="mform-group">
+-            <label class="mform-label">Descripción</label>
+-            <textarea class="mform-textarea" id="p-descripcion" placeholder="Descripción del producto..."></textarea>
+-          </div>
+-          <div class="mform-row">
+-            <div class="mform-group">
+-              <label class="mform-label">Talles disponibles</label>
+-              <input class="mform-input" type="text" id="p-talles" placeholder="XS, S, M, L, XL"/>
+-              <p class="mform-hint">Separados por coma</p>
+-            </div>
+-            <div class="mform-group">
+-              <label class="mform-label">Colores disponibles</label>
+-              <input class="mform-input" type="text" id="p-colores" placeholder="Negro, Gris, Blanco"/>
+-              <p class="mform-hint">Separados por coma</p>
+-            </div>
++            <label class="mform-label">Videos (.webm)</label>
++            <div class="img-gallery-editor" id="ed-video"></div>
++            <input type="file" id="in-video" accept="video/webm,.webm" multiple style="display:none" onchange="addFiles('video', this)"/>
++            <p class="mform-hint">Máx. 20 MB c/u. Se muestran primero en el detalle; el primero se reproduce en la carta. Recomendado 3:4 vertical, sin audio. Convertir: <code>ffmpeg -i in.mp4 -an -vf "scale=720:-2" -c:v libvpx-vp9 -crf 36 -b:v 0 out.webm</code></p>
+           </div>
+           <div class="mform-group">
+-            <label class="mform-label">Imágenes *</label>
+-            <div class="img-gallery-editor" id="img-gallery-editor"></div>
+-            <input type="file" id="p-imagen-file" accept="image/jpeg,image/png,image/webp,image/gif" style="display:none" multiple onchange="handleImageSelect(this)"/>
+-            <p class="mform-hint">La primera imagen es la principal. Las imágenes se suben al guardar.</p>
++            <label class="mform-label">Imágenes * (la primera es la principal y el fallback del video)</label>
++            <div class="img-gallery-editor" id="ed-image"></div>
++            <input type="file" id="in-image" accept="image/jpeg,image/png,image/webp" multiple style="display:none" onchange="addFiles('image', this)"/>
++            <p class="mform-hint">Se redimensionan a máx. 1600 px y se convierten a WebP al guardar.</p>
+           </div>
+-          <div style="display:flex;flex-direction:column;gap:0;">
+-            <div class="toggle-row">
+-              <label for="p-nuevo">Marcar como Nuevo</label>
+-              <label class="toggle">
+-                <input type="checkbox" id="p-nuevo"/>
+-                <span class="toggle-thumb"></span>
+-              </label>
+-            </div>
+-            <div class="toggle-row">
+-              <label for="p-sale">Marcar como Oferta</label>
+-              <label class="toggle">
+-                <input type="checkbox" id="p-sale"/>
+-                <span class="toggle-thumb"></span>
+-              </label>
+-            </div>
+-            <div class="toggle-row">
+-              <label for="p-destacado">Mostrar en destacados</label>
+-              <label class="toggle">
+-                <input type="checkbox" id="p-destacado"/>
+-                <span class="toggle-thumb"></span>
+-              </label>
+-            </div>
++          <div style="display:flex;flex-direction:column;">
++            <div class="toggle-row"><label for="p-nuevo">Marcar como Nuevo</label><label class="toggle"><input type="checkbox" id="p-nuevo"/><span class="toggle-thumb"></span></label></div>
++            <div class="toggle-row"><label for="p-sale">Marcar como Oferta</label><label class="toggle"><input type="checkbox" id="p-sale"/><span class="toggle-thumb"></span></label></div>
++            <div class="toggle-row"><label for="p-destacado">Mostrar en destacados</label><label class="toggle"><input type="checkbox" id="p-destacado"/><span class="toggle-thumb"></span></label></div>
+           </div>
+         </form>
+       </div>
+       <div class="modal-footer">
+-        <button class="btn btn-dark" style="padding:10px 24px;" onclick="saveProduct()">Guardar producto</button>
++        <button class="btn btn-dark" id="save-btn" style="padding:10px 24px;" onclick="saveProduct()">Guardar producto</button>
+         <button class="action-btn action-btn-ghost" onclick="closeModal('product-modal')">Cancelar</button>
+       </div>
+     </div>
+   </div>
+ 
+-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+-  <script src="../js/supabase.js"></script>
+-  <script src="../js/data.js"></script>
+-  <script src="../js/categories.js"></script>
+-  <script>
+-    // ── Populate category select from central config ──
+-    (function() {
+-      const sel = document.getElementById('p-categoria');
+-      CATEGORIES.forEach(c => {
+-        const opt = document.createElement('option');
+-        opt.value = c.slug;
+-        opt.textContent = c.nombre;
+-        sel.appendChild(opt);
+-      });
+-    })();
+-
+-    // ── Auth guard ─────────────────────────────────────
+-    async function logout() {
+-      await db.auth.signOut();
+-      location.href = 'login.html';
+-    }
+-
+-    // ── State ──────────────────────────────────────────
+-    let pedidosList      = [];
+-    let currentOrderId   = null;
+-    let editingProductId  = null;
+-    let currentImageUrls  = [];    // URLs existentes (al editar)
+-    let pendingImageFiles = [];    // { file, previewUrl } pendientes de subir
+-    let removedImageUrls  = [];    // URLs a borrar del storage al guardar
+-
+-    // ── Stats ──────────────────────────────────────────
+-    function renderStats() {
+-      const pending  = pedidosList.filter(p => p.estado === 'pendiente').length;
+-      const totalRev = pedidosList.filter(p => p.estado !== 'cancelado').reduce((s, p) => s + p.total, 0);
+-      document.getElementById('stats-grid').innerHTML = `
+-        <div class="stat-card">
+-          <p class="stat-label">Pedidos totales</p>
+-          <p class="stat-value">${pedidosList.length}</p>
+-          <p class="stat-hint">Todos los tiempos</p>
+-        </div>
+-        <div class="stat-card">
+-          <p class="stat-label">Pendientes</p>
+-          <p class="stat-value" style="color:${pending ? '#c0392b' : '#2ecc71'}">${pending}</p>
+-          <p class="stat-hint">Requieren atención</p>
+-        </div>
+-        <div class="stat-card">
+-          <p class="stat-label">Productos</p>
+-          <p class="stat-value">${PRODUCTOS.length}</p>
+-          <p class="stat-hint">En el catálogo</p>
+-        </div>
+-        <div class="stat-card">
+-          <p class="stat-label">Facturación</p>
+-          <p class="stat-value" style="font-size:20px;">${formatPrecio(totalRev)}</p>
+-          <p class="stat-hint">Pedidos confirmados</p>
+-        </div>
+-      `;
+-      const badgeVal = pending || '';
+-      const badgeShow = pending ? 'inline' : 'none';
+-      document.getElementById('pending-badge').textContent = badgeVal;
+-      document.getElementById('pending-badge').style.display = badgeShow;
+-      document.getElementById('pending-badge-mobile').textContent = badgeVal;
+-      document.getElementById('pending-badge-mobile').style.display = badgeShow;
+-    }
+-
+-    // ── Mobile menu ────────────────────────────────────
+-    function toggleMobileMenu() {
+-      const nav     = document.getElementById('mobile-nav');
+-      const overlay = document.getElementById('mobile-nav-overlay');
+-      const btn     = document.getElementById('mobile-menu-btn');
+-      const isOpen  = nav.classList.contains('open');
+-      nav.classList.toggle('open');
+-      overlay.classList.toggle('open');
+-      btn.classList.toggle('open');
+-    }
+-    function closeMobileMenu() {
+-      document.getElementById('mobile-nav').classList.remove('open');
+-      document.getElementById('mobile-nav-overlay').classList.remove('open');
+-      document.getElementById('mobile-menu-btn').classList.remove('open');
+-    }
+-
+-    // ── Tabs ───────────────────────────────────────────
+-    function switchTab(name, btn) {
+-      document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+-      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+-      document.querySelectorAll('.sidebar-link').forEach(b => b.classList.remove('active'));
+-      document.getElementById('panel-' + name).classList.add('active');
+-      const tabBtn = document.getElementById('tab-btn-' + name);
+-      if (tabBtn) tabBtn.classList.add('active');
+-      if (btn) btn.classList.add('active');
+-      // Sync mobile nav active state
+-      document.getElementById('mnav-pedidos').classList.toggle('active', name === 'pedidos');
+-      document.getElementById('mnav-productos').classList.toggle('active', name === 'productos');
+-    }
+-
+-    // ── PEDIDOS ────────────────────────────────────────
+-    const estadoLabels = {
+-      pendiente:  '<span class="badge badge-pending">Pendiente</span>',
+-      confirmado: '<span class="badge badge-confirmed">Confirmado</span>',
+-      enviado:    '<span class="badge badge-shipped">Enviado</span>',
+-      entregado:  '<span class="badge badge-done">Entregado</span>',
+-      cancelado:  '<span class="badge badge-cancelled">Cancelado</span>'
+-    };
+-
+-    function renderPedidos(list) {
+-      const tbody = document.getElementById('orders-body');
+-      if (!list.length) {
+-        tbody.innerHTML = `<tr><td colspan="8"><div class="table-empty"><div class="e-icon">📭</div><p>No hay pedidos todavía</p></div></td></tr>`;
+-        return;
+-      }
+-      tbody.innerHTML = list.map(p => {
+-        const fecha = new Date(p.created_at).toLocaleDateString('es-AR', { day:'2-digit', month:'2-digit', year:'2-digit', hour:'2-digit', minute:'2-digit' });
+-        const ordId = String(p.id).padStart(6, '0');
+-        return `<tr>
+-          <td><strong>#${ordId}</strong></td>
+-          <td style="font-size:12px;color:#888;">${fecha}</td>
+-          <td><strong>${p.nombre}</strong></td>
+-          <td>
+-            <a href="https://wa.me/549${p.whatsapp.replace(/\D/g,'')}" target="_blank" style="color:#25d366;font-weight:600;font-size:12px;">
+-              📱 ${p.whatsapp}
+-            </a>
+-          </td>
+-          <td style="font-size:12px;">${p.localidad}${p.provincia ? ', ' + p.provincia : ''}</td>
+-          <td><strong>${formatPrecio(p.total)}</strong></td>
+-          <td>${estadoLabels[p.estado] || p.estado}</td>
+-          <td>
+-            <button class="action-btn action-btn-primary" style="font-size:11px;" onclick="openOrderModal(${p.id})">Ver</button>
+-          </td>
+-        </tr>`;
+-      }).join('');
+-    }
+-
+-    function filterPedidos() {
+-      const q   = document.getElementById('search-pedidos').value.toLowerCase();
+-      const est = document.getElementById('filter-estado').value;
+-      let list  = [...pedidosList];
+-      if (q)   list = list.filter(p => p.nombre.toLowerCase().includes(q) || String(p.id).includes(q));
+-      if (est) list = list.filter(p => p.estado === est);
+-      renderPedidos(list);
+-    }
+-
+-    function openOrderModal(id) {
+-      const p = pedidosList.find(o => o.id === id);
+-      if (!p) return;
+-      currentOrderId = id;
+-      const ordId = String(p.id).padStart(6, '0');
+-      const fecha = new Date(p.created_at).toLocaleDateString('es-AR', { weekday:'long', day:'numeric', month:'long', year:'numeric', hour:'2-digit', minute:'2-digit' });
+-      const waMsg = `Hola ${p.nombre.split(' ')[0]}! 👋 Gracias por tu pedido #${ordId}. Estamos confirmando disponibilidad de stock. ¡Te avisamos a la brevedad!`;
+-
+-      document.getElementById('order-modal-title').textContent = `Pedido #${ordId}`;
+-      document.getElementById('order-status-select').value = p.estado;
+-      document.getElementById('order-modal-body').innerHTML = `
+-        <div class="order-detail-header">
+-          <div class="order-detail-field"><small>Fecha</small><span>${fecha}</span></div>
+-          <div class="order-detail-field"><small>Estado</small><span>${estadoLabels[p.estado]}</span></div>
+-          <div class="order-detail-field"><small>Cliente</small><span>${p.nombre}</span></div>
+-          <div class="order-detail-field">
+-            <small>WhatsApp</small>
+-            <span>
+-              <a href="https://wa.me/549${p.whatsapp.replace(/\D/g,'')}?text=${encodeURIComponent(waMsg)}" target="_blank" style="color:#25d366;font-weight:700;">
+-                📱 ${p.whatsapp}
+-              </a>
+-            </span>
+-          </div>
+-          <div class="order-detail-field"><small>Dirección</small><span>${p.direccion}</span></div>
+-          <div class="order-detail-field"><small>Localidad</small><span>${p.localidad}${p.provincia ? ', ' + p.provincia : ''}</span></div>
+-          ${p.nota ? `<div class="order-detail-field" style="grid-column:1/-1"><small>Nota</small><span>${p.nota}</span></div>` : ''}
+-        </div>
+-
+-        <p style="font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:#aaa;margin-bottom:10px;">Productos</p>
+-        <div class="order-items-list">
+-          ${p.items.map(item => `
+-            <div class="order-item-row">
+-              <img src="${item.imagen && item.imagen.startsWith('http') ? item.imagen : `../${item.imagen}`}" alt="${item.nombre}" onerror="this.style.display='none'"/>
+-              <div>
+-                <p style="font-weight:600;">${item.nombre}</p>
+-                <p style="font-size:11px;color:#888;">${item.talle} / ${item.color} ×${item.qty}</p>
+-              </div>
+-              <span style="margin-left:auto;font-weight:700;">${formatPrecio(item.precio * item.qty)}</span>
+-            </div>
+-          `).join('')}
+-          <div style="display:flex;justify-content:space-between;font-weight:700;font-size:15px;padding-top:14px;margin-top:4px;border-top:2px solid var(--black);">
+-            <span>Total</span><span>${formatPrecio(p.total)}</span>
+-          </div>
+-        </div>
+-      `;
+-      document.getElementById('order-modal').classList.add('open');
+-    }
++  <!-- ── Modal Publicar ── -->
++  <div class="modal-overlay" id="publish-modal">
++    <div class="modal">
++      <div class="modal-header"><h3>Publicar cambios</h3><button class="modal-close" onclick="closeModal('publish-modal')">×</button></div>
++      <div class="modal-body">
++        <p class="mform-hint" id="publish-info" style="margin-bottom:10px"></p>
++        <div class="mform-group"><label class="mform-label">Mensaje del commit</label><input class="mform-input" type="text" id="commit-msg" value="Actualizar catálogo"/></div>
++        <pre id="publish-log" style="display:none;margin-top:12px;max-height:220px;overflow:auto;background:#111;color:#ddd;padding:12px;font-size:11px;white-space:pre-wrap"></pre>
++      </div>
++      <div class="modal-footer">
++        <button class="btn btn-dark" id="publish-btn" style="padding:10px 24px;" onclick="publish()">Publicar (commit + push)</button>
++        <button class="action-btn action-btn-ghost" onclick="closeModal('publish-modal')">Cerrar</button>
++      </div>
++    </div>
++  </div>
+ 
+-    async function saveOrderStatus() {
+-      const estado = document.getElementById('order-status-select').value;
+-      try {
+-        await db_actualizarEstadoPedido(currentOrderId, estado);
+-        const idx = pedidosList.findIndex(p => p.id === currentOrderId);
+-        if (idx > -1) pedidosList[idx].estado = estado;
+-        closeModal('order-modal');
+-        renderStats();
+-        filterPedidos();
+-      } catch (err) {
+-        alert('Error al actualizar estado: ' + err.message);
+-      }
++  <script src="/js/categories.js"></script>
++  <script src="/js/data.js"></script>
++  <script>
++    const H = { 'X-Emma-Admin': '1' };
++    async function api(path, opts = {}) {
++      const r = await fetch('/api' + path, { ...opts, headers: { ...H, ...(opts.headers || {}) } });
++      const j = await r.json().catch(() => ({}));
++      if (!r.ok) { const e = new Error(j.error || r.statusText); e.data = j; throw e; }
++      return j;
+     }
++    const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
++    const $ = id => document.getElementById(id);
+ 
+-    // ── PRODUCTOS ──────────────────────────────────────
+     const catNames = Object.fromEntries(CATEGORIES.map(c => [c.slug, c.nombre]));
+-
+-    function renderProductos(list) {
+-      const tbody = document.getElementById('products-body');
+-      if (!list.length) {
+-        tbody.innerHTML = `<tr><td colspan="8"><div class="table-empty"><div class="e-icon">👕</div><p>No hay productos</p></div></td></tr>`;
+-        return;
+-      }
+-      tbody.innerHTML = list.map(p => {
+-        const imgSrc = (p.imagenes && p.imagenes[0])
+-          ? (p.imagenes[0].startsWith('http') ? p.imagenes[0] : `../${p.imagenes[0]}`)
+-          : '';
+-        return `
++    CATEGORIES.forEach(c => $('p-categoria').add(new Option(c.nombre, c.slug)));
++
++    let products = [];
++    let editingId = null;
++    // Medios del producto en edición, en orden: { url } existente | { file, preview } nuevo
++    let media = { image: [], video: [] };
++
++    /* ── Tabla ── */
++    function renderProductos() {
++      const q = $('search-productos').value.toLowerCase();
++      const list = q ? products.filter(p => p.nombre.toLowerCase().includes(q)) : products;
++      $('products-body').innerHTML = list.length ? list.map(p => `
+         <tr>
+-          <td>
+-            <img class="product-thumb" src="${imgSrc}" alt="${p.nombre}" onerror="this.src='data:image/svg+xml,<svg xmlns=\\'http://www.w3.org/2000/svg\\' width=\\'44\\' height=\\'56\\'><rect fill=\\'%23eee\\' width=\\'44\\' height=\\'56\\'/></svg>'"/>
+-          </td>
+-          <td><strong>${p.nombre}</strong></td>
+-          <td style="font-size:12px;color:#888;">${catNames[p.categoria] || p.categoria}</td>
+-          <td>
+-            <strong>${formatPrecio(p.precio)}</strong>
+-            ${p.precioAntes ? `<br><span style="font-size:11px;color:#888;text-decoration:line-through;">${formatPrecio(p.precioAntes)}</span>` : ''}
+-          </td>
+-          <td style="font-size:12px;">${(p.talles || []).join(', ')}</td>
+-          <td style="font-size:12px;">${(p.colores || []).join(', ')}</td>
+-          <td>
+-            ${p.nuevo    ? '<span class="badge badge-new" style="display:block;margin-bottom:3px;">Nuevo</span>' : ''}
+-            ${p.sale     ? '<span class="badge badge-sale" style="display:block;margin-bottom:3px;">Oferta</span>' : ''}
+-            ${p.destacado? '<span class="badge" style="background:#f0f4e8;color:#5a7a2a;display:block;">Destacado</span>' : ''}
+-          </td>
+-          <td>
+-            <div style="display:flex;gap:6px;flex-wrap:wrap;">
+-              <a href="../producto.html?id=${p.id}" target="_blank" class="action-btn action-btn-ghost" style="font-size:11px;">Ver</a>
+-              <button class="action-btn action-btn-primary" style="font-size:11px;" onclick="editProduct(${p.id})">Editar</button>
+-              <button class="action-btn action-btn-danger" style="font-size:11px;" onclick="deleteProduct(${p.id})">Eliminar</button>
+-            </div>
+-          </td>
+-        </tr>
+-      `;
+-      }).join('');
+-    }
+-
+-    function filterProductos() {
+-      const q    = document.getElementById('search-productos').value.toLowerCase();
+-      const list = q ? PRODUCTOS.filter(p => p.nombre.toLowerCase().includes(q)) : PRODUCTOS;
+-      renderProductos(list);
+-    }
+-
+-    function renderImageGalleryEditor() {
+-      const editor = document.getElementById('img-gallery-editor');
+-      editor.innerHTML = '';
+-
+-      currentImageUrls.forEach((url, i) => {
+-        const thumb = document.createElement('div');
+-        thumb.className = 'img-thumb';
+-        thumb.innerHTML = `<img src="${url}" alt="Imagen ${i+1}"/>
+-          <button type="button" class="img-thumb-remove" onclick="removeCurrentImage(${i})">×</button>`;
+-        editor.appendChild(thumb);
++          <td><img class="product-thumb" src="${esc(p.imagenes[0])}" alt=""/></td>
++          <td><strong>${esc(p.nombre)}</strong></td>
++          <td style="font-size:12px;color:#888">${esc(catNames[p.categoria] || p.categoria)}</td>
++          <td><strong>${formatPrecio(p.precio)}</strong>${p.precioAntes ? `<br><span style="font-size:11px;color:#888;text-decoration:line-through">${formatPrecio(p.precioAntes)}</span>` : ''}</td>
++          <td style="font-size:12px">${esc((p.talles || []).join(', '))}</td>
++          <td style="font-size:12px">${esc((p.colores || []).join(', '))}</td>
++          <td style="font-size:12px">${p.imagenes.length} 🖼 · ${(p.videos || []).length} 🎬</td>
++          <td>${p.nuevo ? '<span class="badge badge-new" style="display:block;margin-bottom:3px">Nuevo</span>' : ''}${p.sale ? '<span class="badge badge-sale" style="display:block;margin-bottom:3px">Oferta</span>' : ''}${p.destacado ? '<span class="badge" style="background:#f0f4e8;color:#5a7a2a;display:block">Destacado</span>' : ''}</td>
++          <td><div style="display:flex;gap:6px;flex-wrap:wrap">
++            <a href="/producto.html?id=${p.id}" target="_blank" class="action-btn action-btn-ghost" style="font-size:11px">Ver</a>
++            <button class="action-btn action-btn-primary" style="font-size:11px" onclick="openProductModal(${p.id})">Editar</button>
++            <button class="action-btn action-btn-danger" style="font-size:11px" onclick="deleteProduct(${p.id})">Eliminar</button>
++          </div></td>
++        </tr>`).join('') : `<tr><td colspan="9"><div class="table-empty"><div class="e-icon">👕</div><p>No hay productos todavía</p></div></td></tr>`;
++    }
++
++    /* ── Editor de medios ── */
++    function renderEditor(kind) {
++      const ed = $('ed-' + kind);
++      ed.innerHTML = '';
++      media[kind].forEach((m, i) => {
++        const src = m.url || m.preview;
++        const t = document.createElement('div');
++        t.className = 'img-thumb' + (m.file ? ' img-thumb-new' : '');
++        t.innerHTML = (kind === 'video'
++          ? `<video src="${esc(src)}#t=0.1" muted preload="metadata"></video>`
++          : `<img src="${esc(src)}" alt=""/>`) +
++          `<button type="button" class="img-thumb-remove" onclick="removeMedia('${kind}',${i})">×</button>` +
++          (i > 0 ? `<button type="button" title="Mover al inicio" onclick="moveFirst('${kind}',${i})" style="position:absolute;left:2px;bottom:2px;font-size:10px;padding:1px 5px;border:0;background:rgba(0,0,0,.65);color:#fff;cursor:pointer">←</button>` : '');
++        if (kind === 'video') t.querySelector('video').style.cssText = 'width:100%;height:100%;object-fit:cover';
++        ed.appendChild(t);
+       });
+-
+-      pendingImageFiles.forEach((item, i) => {
+-        const thumb = document.createElement('div');
+-        thumb.className = 'img-thumb img-thumb-new';
+-        thumb.innerHTML = `<img src="${item.previewUrl}" alt="Nueva imagen"/>
+-          <button type="button" class="img-thumb-remove" onclick="removePendingImage(${i})">×</button>`;
+-        editor.appendChild(thumb);
+-      });
+-
+-      const addBtn = document.createElement('div');
+-      addBtn.className = 'img-add-btn';
+-      addBtn.title = 'Agregar imagen';
+-      addBtn.innerHTML = '+';
+-      addBtn.onclick = () => document.getElementById('p-imagen-file').click();
+-      editor.appendChild(addBtn);
+-    }
+-
+-    function removeCurrentImage(i) {
+-      removedImageUrls.push(currentImageUrls[i]);
+-      currentImageUrls.splice(i, 1);
+-      renderImageGalleryEditor();
++      const add = document.createElement('div');
++      add.className = 'img-add-btn'; add.textContent = '+'; add.title = 'Agregar';
++      add.onclick = () => $('in-' + kind).click();
++      ed.appendChild(add);
++    }
++    const removeMedia = (k, i) => { media[k].splice(i, 1); renderEditor(k); };
++    const moveFirst = (k, i) => { media[k].unshift(media[k].splice(i, 1)[0]); renderEditor(k); };
++
++    function addFiles(kind, input) {
++      for (const file of input.files) {
++        if (kind === 'video' && (!/\.webm$/i.test(file.name) || file.size > 20 * 1048576)) {
++          alert(`"${file.name}": solo .webm de hasta 20 MB.`); continue;
++        }
++        media[kind].push({ file, preview: URL.createObjectURL(file) });
++      }
++      input.value = '';
++      renderEditor(kind);
+     }
+ 
+-    function removePendingImage(i) {
+-      pendingImageFiles.splice(i, 1);
+-      renderImageGalleryEditor();
++    // Redimensiona a máx. 1600px y convierte a WebP
++    async function toWebp(file) {
++      const bmp = await createImageBitmap(file);
++      const k = Math.min(1, 1600 / Math.max(bmp.width, bmp.height));
++      const c = document.createElement('canvas');
++      c.width = Math.round(bmp.width * k); c.height = Math.round(bmp.height * k);
++      c.getContext('2d').drawImage(bmp, 0, 0, c.width, c.height);
++      const blob = await new Promise(r => c.toBlob(r, 'image/webp', 0.85));
++      if (!blob) throw new Error('No se pudo convertir la imagen');
++      return blob;
+     }
+ 
+-    function handleImageSelect(input) {
+-      const files = Array.from(input.files);
+-      files.forEach(file => {
+-        const reader = new FileReader();
+-        reader.onload = e => {
+-          pendingImageFiles.push({ file, previewUrl: e.target.result });
+-          renderImageGalleryEditor();
+-        };
+-        reader.readAsDataURL(file);
+-      });
+-      input.value = '';
++    async function upload(kind, body, name) {
++      const r = await api(`/upload?kind=${kind}&name=${encodeURIComponent(name)}`, { method: 'POST', body, headers: { 'Content-Type': 'application/octet-stream' } });
++      return r.path;
+     }
+ 
++    /* ── Modal producto ── */
+     function openProductModal(id) {
+-      editingProductId  = id || null;
+-      currentImageUrls  = [];
+-      pendingImageFiles = [];
+-      removedImageUrls  = [];
+-      document.getElementById('p-imagen-file').value = '';
+-      document.getElementById('product-modal-title').textContent = id ? 'Editar producto' : 'Nuevo producto';
+-
++      editingId = id || null;
++      media = { image: [], video: [] };
++      $('product-modal-title').textContent = id ? 'Editar producto' : 'Nuevo producto';
++      $('product-form').reset();
+       if (id) {
+-        const p = PRODUCTOS.find(x => x.id === id);
+-        if (!p) return;
+-        document.getElementById('p-nombre').value       = p.nombre;
+-        document.getElementById('p-categoria').value    = p.categoria;
+-        document.getElementById('p-genero').value       = p.genero;
+-        document.getElementById('p-precio').value       = p.precio;
+-        document.getElementById('p-precio-antes').value = p.precioAntes || '';
+-        document.getElementById('p-descripcion').value  = p.descripcion || '';
+-        document.getElementById('p-talles').value       = (p.talles  || []).join(', ');
+-        document.getElementById('p-colores').value      = (p.colores || []).join(', ');
+-        document.getElementById('p-nuevo').checked      = !!p.nuevo;
+-        document.getElementById('p-sale').checked       = !!p.sale;
+-        document.getElementById('p-destacado').checked  = !!p.destacado;
+-        currentImageUrls = [...(p.imagenes || [])];
+-      } else {
+-        document.getElementById('product-form').reset();
++        const p = products.find(x => x.id === id);
++        $('p-nombre').value = p.nombre; $('p-categoria').value = p.categoria; $('p-genero').value = p.genero;
++        $('p-precio').value = p.precio; $('p-precio-antes').value = p.precioAntes || '';
++        $('p-descripcion').value = p.descripcion || '';
++        $('p-talles').value = (p.talles || []).join(', '); $('p-colores').value = (p.colores || []).join(', ');
++        $('p-nuevo').checked = !!p.nuevo; $('p-sale').checked = !!p.sale; $('p-destacado').checked = !!p.destacado;
++        media.image = p.imagenes.map(url => ({ url }));
++        media.video = (p.videos || []).map(url => ({ url }));
+       }
+-      renderImageGalleryEditor();
+-      document.getElementById('product-modal').classList.add('open');
++      renderEditor('image'); renderEditor('video');
++      $('product-modal').classList.add('open');
+     }
+ 
+-    function editProduct(id) { openProductModal(id); }
++    const csv = s => s.split(',').map(x => x.trim()).filter(Boolean);
+ 
+     async function saveProduct() {
+-      const nombre = document.getElementById('p-nombre').value.trim();
+-      const precio = Number(document.getElementById('p-precio').value);
+-      if (!nombre || !precio) { alert('Completá los campos obligatorios (nombre y precio).'); return; }
+-      if (currentImageUrls.length === 0 && pendingImageFiles.length === 0) {
+-        alert('Seleccioná al menos una imagen para el producto.'); return;
+-      }
+-
+-      const saveBtn = document.querySelector('#product-modal .btn-dark');
+-      saveBtn.disabled = true;
+-      saveBtn.textContent = 'Subiendo imágenes...';
++      const nombre = $('p-nombre').value.trim();
++      const precio = Number($('p-precio').value);
++      if (!nombre || !precio) return alert('Completá nombre y precio.');
++      if (!media.image.length) return alert('Agregá al menos una imagen.');
+ 
++      const btn = $('save-btn');
++      btn.disabled = true;
+       try {
+-        // Borrar del storage las imágenes removidas
+-        await Promise.all(removedImageUrls.map(url => storage_deleteImage(url)));
+-
+-        // Subir imágenes nuevas
+-        const newUrls = await Promise.all(
+-          pendingImageFiles.map(item => storage_uploadProductImage(item.file))
+-        );
+-
+-        saveBtn.textContent = 'Guardando...';
+-
++        const out = { image: [], video: [] };
++        for (const kind of ['image', 'video']) {
++          for (const m of media[kind]) {
++            if (m.url) { out[kind].push(m.url); continue; }
++            btn.textContent = kind === 'image' ? 'Procesando imagen...' : 'Subiendo video...';
++            if (kind === 'image') {
++              const blob = await toWebp(m.file);
++              out.image.push(await upload('image', blob, m.file.name.replace(/\.\w+$/, '') + '.webp'));
++            } else {
++              out.video.push(await upload('video', m.file, m.file.name));
++            }
++          }
++        }
++        btn.textContent = 'Guardando...';
++        const prev = editingId && products.find(p => p.id === editingId);
+         const prod = {
+-          nombre,
+-          categoria:   document.getElementById('p-categoria').value,
+-          genero:      document.getElementById('p-genero').value,
+-          precio,
+-          precioAntes: Number(document.getElementById('p-precio-antes').value) || null,
+-          descripcion: document.getElementById('p-descripcion').value.trim(),
+-          talles:      document.getElementById('p-talles').value.split(',').map(s => s.trim()).filter(Boolean),
+-          colores:     document.getElementById('p-colores').value.split(',').map(s => s.trim()).filter(Boolean),
+-          imagenes:    [...currentImageUrls, ...newUrls],
+-          nuevo:       document.getElementById('p-nuevo').checked,
+-          sale:        document.getElementById('p-sale').checked,
+-          destacado:   document.getElementById('p-destacado').checked
++          id: editingId || Math.max(0, ...products.map(p => p.id)) + 1,
++          nombre, precio,
++          precioAntes: Number($('p-precio-antes').value) || null,
++          descripcion: $('p-descripcion').value.trim(),
++          categoria: $('p-categoria').value, genero: $('p-genero').value,
++          talles: csv($('p-talles').value), colores: csv($('p-colores').value),
++          imagenes: out.image, videos: out.video,
++          nuevo: $('p-nuevo').checked, sale: $('p-sale').checked, destacado: $('p-destacado').checked,
++          created_at: prev ? prev.created_at : new Date().toISOString(),
+         };
+-
+-        if (editingProductId) {
+-          await db_updateProduct(editingProductId, prod);
+-        } else {
+-          await db_insertProduct(prod);
+-        }
+-        await loadProductos();
++        const next = editingId ? products.map(p => p.id === editingId ? prod : p) : [prod, ...products];
++        await api('/products', { method: 'PUT', body: JSON.stringify(next) });
++        products = next;
+         closeModal('product-modal');
+-        filterProductos();
+-        renderStats();
++        renderProductos(); refreshGit();
+       } catch (err) {
+-        alert('Error al guardar el producto: ' + err.message);
++        alert('Error al guardar: ' + err.message);
+       } finally {
+-        saveBtn.disabled = false;
+-        saveBtn.textContent = 'Guardar producto';
++        btn.disabled = false; btn.textContent = 'Guardar producto';
+       }
+     }
+ 
+     async function deleteProduct(id) {
+-      if (!confirm('¿Eliminar este producto? Esta acción no se puede deshacer.')) return;
++      if (!confirm('¿Eliminar este producto y sus archivos? (Podés recuperarlo con git antes de publicar.)')) return;
+       try {
+-        const prod = PRODUCTOS.find(p => p.id === id);
+-        await db_deleteProduct(id);
+-        if (prod?.imagenes?.length) {
+-          await Promise.all(prod.imagenes.map(url => storage_deleteImage(url)));
+-        }
+-        await loadProductos();
+-        filterProductos();
+-        renderStats();
+-      } catch (err) {
+-        alert('Error al eliminar: ' + err.message);
+-      }
++        const next = products.filter(p => p.id !== id);
++        await api('/products', { method: 'PUT', body: JSON.stringify(next) });
++        products = next; renderProductos(); refreshGit();
++      } catch (err) { alert('Error al eliminar: ' + err.message); }
+     }
+ 
+-    // ── Modal helpers ──────────────────────────────────
+-    function closeModal(id) {
+-      document.getElementById(id).classList.remove('open');
++    /* ── Git / publicar ── */
++    let gitInfo = null;
++    async function refreshGit() {
++      try {
++        gitInfo = await api('/git');
++        $('pending-badge').textContent = gitInfo.ok ? (gitInfo.changes.length ? `${gitInfo.changes.length} archivo(s) sin publicar` : 'Todo publicado') : 'git no disponible';
++      } catch { $('pending-badge').textContent = ''; }
++    }
++    async function openPublish() {
++      await refreshGit();
++      $('publish-log').style.display = 'none';
++      $('publish-info').textContent = gitInfo && gitInfo.ok
++        ? (gitInfo.changes.length ? `Rama ${gitInfo.branch}. Cambios: ${gitInfo.changes.join(' · ')}` : `Rama ${gitInfo.branch}. No hay cambios nuevos (igual se intenta el push por si quedó algo pendiente).`)
++        : (gitInfo ? gitInfo.error : '');
++      $('publish-modal').classList.add('open');
++    }
++    async function publish() {
++      const btn = $('publish-btn'); btn.disabled = true; btn.textContent = 'Publicando...';
++      const log = $('publish-log'); log.style.display = 'block'; log.textContent = '';
++      try {
++        const r = await api('/publish', { method: 'POST', body: JSON.stringify({ message: $('commit-msg').value }) });
++        log.textContent = r.log.join('\n\n') + '\n\n✅ Publicado. Vercel va a redeployar en 1-2 minutos.';
++      } catch (err) {
++        log.textContent = ((err.data && err.data.log) || []).join('\n\n') + `\n\n❌ ${err.message}`;
++      } finally { btn.disabled = false; btn.textContent = 'Publicar (commit + push)'; refreshGit(); }
+     }
+-    document.querySelectorAll('.modal-overlay').forEach(m => {
+-      m.addEventListener('click', e => { if (e.target === m) m.classList.remove('open'); });
+-    });
+-
+-    // ── Init ───────────────────────────────────────────
+-    (async function init() {
+-      const { data: { session } } = await db.auth.getSession();
+-      if (!session) { location.href = 'login.html'; return; }
+-      document.body.style.display = '';
+-
+-      document.getElementById('orders-body').innerHTML =
+-        `<tr><td colspan="8" style="text-align:center;padding:40px;color:#aaa;">Cargando pedidos...</td></tr>`;
+-      document.getElementById('products-body').innerHTML =
+-        `<tr><td colspan="8" style="text-align:center;padding:40px;color:#aaa;">Cargando productos...</td></tr>`;
+ 
+-      [pedidosList] = await Promise.all([
+-        db_getPedidos(),
+-        loadProductos()
+-      ]);
++    function closeModal(id) { $(id).classList.remove('open'); }
++    document.querySelectorAll('.modal-overlay').forEach(m => m.addEventListener('click', e => { if (e.target === m) m.classList.remove('open'); }));
+ 
+-      renderStats();
+-      filterPedidos();
+-      renderProductos(PRODUCTOS);
++    (async function init() {
++      try { products = await api('/products'); }
++      catch (e) { document.body.innerHTML = '<p style="padding:40px">No se pudo conectar con el servidor local. Ejecutá <code>node admin/server.js</code> y abrí <code>http://localhost:3000/admin/</code></p>'; return; }
++      renderProductos(); refreshGit();
+     })();
+   </script>
+ </body>
+diff --git a/admin/login.html b/admin/login.html
+deleted file mode 100644
+index 202b3c5..0000000
+--- a/admin/login.html
++++ /dev/null
+@@ -1,149 +0,0 @@
+-<!DOCTYPE html>
+-<html lang="es">
+-<head>
+-  <meta charset="UTF-8"/>
+-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+-  <title>Admin — Emma</title>
+-  <link rel="icon" type="image/svg+xml" href="/favicon.svg"/>
+-  <link rel="stylesheet" href="../css/styles.css"/>
+-  <style>
+-    body { background: var(--gray-50); min-height: 100vh; display: flex; align-items: center; justify-content: center; }
+-    .login-card {
+-      width: 100%;
+-      max-width: 400px;
+-      background: var(--white);
+-      padding: 48px 40px;
+-      box-shadow: 0 2px 24px rgba(0,0,0,0.08);
+-    }
+-    .login-logo { text-align: center; margin-bottom: 8px; }
+-    .login-logo img { height: 40px; margin: 0 auto; }
+-    .login-subtitle {
+-      text-align: center;
+-      font-size: 11px;
+-      font-weight: 700;
+-      letter-spacing: 2px;
+-      text-transform: uppercase;
+-      color: var(--gray-500);
+-      margin-bottom: 36px;
+-    }
+-    .form-group { margin-bottom: 18px; }
+-    .form-label {
+-      display: block;
+-      font-size: 11px;
+-      font-weight: 700;
+-      letter-spacing: 1px;
+-      text-transform: uppercase;
+-      color: var(--gray-700);
+-      margin-bottom: 7px;
+-    }
+-    .form-input {
+-      width: 100%;
+-      padding: 12px 14px;
+-      font-family: var(--font-sans);
+-      font-size: 14px;
+-      border: 1.5px solid var(--gray-300);
+-      outline: none;
+-      transition: border-color 0.2s;
+-    }
+-    .form-input:focus { border-color: var(--black); }
+-    .login-btn {
+-      width: 100%;
+-      padding: 14px;
+-      background: var(--black);
+-      color: var(--white);
+-      font-family: var(--font-sans);
+-      font-size: 12px;
+-      font-weight: 700;
+-      letter-spacing: 1.5px;
+-      text-transform: uppercase;
+-      border: none;
+-      cursor: pointer;
+-      margin-top: 8px;
+-      transition: background 0.2s;
+-    }
+-    .login-btn:hover { background: #333; }
+-    .login-error {
+-      display: none;
+-      margin-top: 14px;
+-      padding: 12px;
+-      background: #ffeaea;
+-      border-left: 3px solid #c0392b;
+-      font-size: 13px;
+-      color: #c0392b;
+-      font-weight: 600;
+-    }
+-    .login-error.show { display: block; }
+-    .back-link {
+-      display: block;
+-      text-align: center;
+-      margin-top: 24px;
+-      font-size: 12px;
+-      color: var(--gray-500);
+-    }
+-    .back-link a { color: var(--gray-500); text-decoration: underline; }
+-  </style>
+-</head>
+-<body>
+-
+-  <div class="login-card">
+-    <div class="login-logo">
+-      <img src="https://pztftznwvrsoipiuhwof.supabase.co/storage/v1/object/public/assets/logo/logo-light.jpg" alt="Emma"/>
+-    </div>
+-    <p class="login-subtitle">Panel de administración</p>
+-
+-    <form id="login-form" novalidate>
+-      <div class="form-group">
+-        <label class="form-label" for="email">Email</label>
+-        <input class="form-input" type="email" id="email" placeholder="admin@emma.com" autocomplete="email"/>
+-      </div>
+-      <div class="form-group">
+-        <label class="form-label" for="password">Contraseña</label>
+-        <input class="form-input" type="password" id="password" placeholder="••••••••" autocomplete="current-password"/>
+-      </div>
+-      <button type="submit" class="login-btn" id="login-btn">Ingresar</button>
+-      <div class="login-error" id="login-error">Email o contraseña incorrectos</div>
+-    </form>
+-
+-    <p class="back-link"><a href="../index.html">← Volver a la tienda</a></p>
+-  </div>
+-
+-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+-  <script src="../js/supabase.js"></script>
+-  <script>
+-    // Redirect if already logged in
+-    db.auth.getSession().then(({ data: { session } }) => {
+-      if (session) location.href = 'dashboard.html';
+-    });
+-
+-    document.getElementById('login-form').addEventListener('submit', async e => {
+-      e.preventDefault();
+-      const email    = document.getElementById('email').value.trim();
+-      const password = document.getElementById('password').value;
+-      const btn      = document.getElementById('login-btn');
+-      const errEl    = document.getElementById('login-error');
+-
+-      btn.disabled    = true;
+-      btn.textContent = 'Ingresando...';
+-      errEl.classList.remove('show');
+-
+-      const { error } = await db.auth.signInWithPassword({ email, password });
+-
+-      if (error) {
+-        errEl.classList.add('show');
+-        document.getElementById('password').value = '';
+-        document.getElementById('password').focus();
+-        btn.disabled    = false;
+-        btn.textContent = 'Ingresar';
+-      } else {
+-        location.href = 'dashboard.html';
+-      }
+-    });
+-
+-    document.querySelectorAll('.form-input').forEach(inp => {
+-      inp.addEventListener('input', () => {
+-        document.getElementById('login-error').classList.remove('show');
+-      });
+-    });
+-  </script>
+-</body>
+-</html>
+diff --git a/admin/server.js b/admin/server.js
+new file mode 100644
+index 0000000..46936cc
+--- /dev/null
++++ b/admin/server.js
+@@ -0,0 +1,290 @@
++#!/usr/bin/env node
++/* ============================================================
++   EMMA — Panel de admin LOCAL (cero dependencias, solo Node 18+)
++
++   Uso:   node admin/server.js
++   Abre:  http://localhost:3000/admin/
++
++   - Sirve el sitio completo para previsualizar (como Vercel).
++   - Edita data/products.json y guarda medios en assets/products/.
++   - "Publicar" hace git add + commit + push → Vercel redeploya.
++
++   Seguridad: escucha SOLO en 127.0.0.1, valida el header Host
++   (anti DNS-rebinding) y exige el header X-Emma-Admin en la API
++   (una web ajena no puede mandarlo sin permiso CORS, que acá
++   nunca se concede). Esta carpeta NO se despliega en Vercel.
++   ============================================================ */
++"use strict";
++
++const http = require("http");
++const fs = require("fs");
++const fsp = fs.promises;
++const path = require("path");
++const crypto = require("crypto");
++const { execFile } = require("child_process");
++
++const ROOT = path.resolve(__dirname, "..");
++const PORT = Number(process.env.PORT) || 3000;
++const HOST = "127.0.0.1";
++const DATA_FILE = path.join(ROOT, "data", "products.json");
++const MEDIA_DIR = path.join(ROOT, "assets", "products");
++const MEDIA_URL = "/assets/products/";
++
++const LIMITS = { image: 8 * 1024 * 1024, video: 20 * 1024 * 1024 };
++const EXTS = { image: [".webp", ".jpg", ".jpeg", ".png"], video: [".webm"] };
++const GENEROS = ["mujer", "hombre", "unisex"];
++
++const MIME = {
++  ".html": "text/html; charset=utf-8", ".css": "text/css; charset=utf-8",
++  ".js": "text/javascript; charset=utf-8", ".json": "application/json; charset=utf-8",
++  ".svg": "image/svg+xml", ".png": "image/png", ".jpg": "image/jpeg", ".jpeg": "image/jpeg",
++  ".webp": "image/webp", ".gif": "image/gif", ".webm": "video/webm", ".mp4": "video/mp4",
++  ".ico": "image/x-icon", ".txt": "text/plain; charset=utf-8",
++};
++
++const ALLOWED_HOSTS = new Set([`127.0.0.1:${PORT}`, `localhost:${PORT}`]);
++
++/* ── Utilidades ─────────────────────────────────────────── */
++
++function sendJson(res, status, obj) {
++  const body = JSON.stringify(obj);
++  res.writeHead(status, { "Content-Type": "application/json; charset=utf-8", "Cache-Control": "no-store" });
++  res.end(body);
++}
++class HttpError extends Error {
++  constructor(status, message) { super(message); this.status = status; }
++}
++
++function readBody(req, limit) {
++  return new Promise((resolve, reject) => {
++    const chunks = [];
++    let size = 0;
++    req.on("data", (c) => {
++      size += c.length;
++      if (size > limit) { reject(new HttpError(413, `El archivo supera el máximo de ${Math.round(limit / 1048576)} MB`)); req.destroy(); return; }
++      chunks.push(c);
++    });
++    req.on("end", () => resolve(Buffer.concat(chunks)));
++    req.on("error", reject);
++  });
++}
++
++function run(cmd, args, timeout = 60000) {
++  return new Promise((resolve) => {
++    execFile(cmd, args, { cwd: ROOT, timeout, env: { ...process.env, GIT_TERMINAL_PROMPT: "0" }, maxBuffer: 4 * 1024 * 1024 },
++      (err, stdout, stderr) => resolve({ code: err ? (typeof err.code === "number" ? err.code : 1) : 0, stdout: String(stdout || ""), stderr: String(stderr || "") }));
++  });
++}
++
++/* ── Validación de productos ────────────────────────────── */
++
++function isMediaPath(p, kind) {
++  return typeof p === "string" && p.startsWith("/assets/") && !p.includes("..") && !p.includes("\\")
++    && (kind !== "video" || p.toLowerCase().endsWith(".webm"));
++}
++const strArr = (a) => (Array.isArray(a) ? a.map((s) => String(s).trim()).filter(Boolean) : []);
++
++function normalizeProducts(list) {
++  if (!Array.isArray(list)) throw new HttpError(400, "Se esperaba una lista de productos");
++  const ids = new Set();
++  return list.map((p, i) => {
++    const where = `Producto #${i + 1}`;
++    if (!Number.isInteger(p.id) || p.id < 1 || ids.has(p.id)) throw new HttpError(400, `${where}: id inválido o repetido`);
++    ids.add(p.id);
++    if (typeof p.nombre !== "string" || !p.nombre.trim()) throw new HttpError(400, `${where}: falta el nombre`);
++    if (typeof p.precio !== "number" || !(p.precio >= 0)) throw new HttpError(400, `${where}: precio inválido`);
++    if (!GENEROS.includes(p.genero)) throw new HttpError(400, `${where}: género inválido`);
++    const imagenes = strArr(p.imagenes), videos = strArr(p.videos);
++    if (!imagenes.length) throw new HttpError(400, `${where}: necesita al menos una imagen`);
++    if (!imagenes.every((m) => isMediaPath(m, "image"))) throw new HttpError(400, `${where}: ruta de imagen inválida`);
++    if (!videos.every((m) => isMediaPath(m, "video"))) throw new HttpError(400, `${where}: ruta de video inválida (solo .webm)`);
++    return {
++      id: p.id,
++      nombre: p.nombre.trim(),
++      descripcion: String(p.descripcion || "").trim(),
++      precio: p.precio,
++      precioAntes: typeof p.precioAntes === "number" && p.precioAntes > 0 ? p.precioAntes : null,
++      categoria: String(p.categoria || "").trim(),
++      genero: p.genero,
++      talles: strArr(p.talles),
++      colores: strArr(p.colores),
++      imagenes,
++      videos,
++      destacado: !!p.destacado,
++      nuevo: !!p.nuevo,
++      sale: !!p.sale,
++      created_at: typeof p.created_at === "string" ? p.created_at : new Date().toISOString(),
++    };
++  });
++}
++
++async function readProducts() {
++  try { return JSON.parse(await fsp.readFile(DATA_FILE, "utf8")); }
++  catch (e) { if (e.code === "ENOENT") return []; throw e; }
++}
++
++async function writeProducts(list) {
++  await fsp.mkdir(path.dirname(DATA_FILE), { recursive: true });
++  const tmp = DATA_FILE + ".tmp";
++  await fsp.writeFile(tmp, JSON.stringify(list, null, 2) + "\n");
++  await fsp.rename(tmp, DATA_FILE);
++}
++
++// Borra de assets/products/ lo que ningún producto referencia
++async function removeOrphans(list) {
++  const used = new Set(list.flatMap((p) => [...p.imagenes, ...p.videos]).filter((m) => m.startsWith(MEDIA_URL)).map((m) => path.basename(m)));
++  let removed = 0;
++  let files = [];
++  try { files = await fsp.readdir(MEDIA_DIR); } catch { return 0; }
++  for (const f of files) {
++    if (f.startsWith(".") || used.has(f)) continue;
++    await fsp.unlink(path.join(MEDIA_DIR, f)).catch(() => {});
++    removed++;
++  }
++  return removed;
++}
++
++/* ── Subida de medios ───────────────────────────────────── */
++
++function magicOk(buf, ext) {
++  const hex = (n) => buf.subarray(0, n).toString("hex");
++  if (ext === ".webm") return hex(4) === "1a45dfa3";
++  if (ext === ".png") return hex(4) === "89504e47";
++  if (ext === ".jpg" || ext === ".jpeg") return hex(3) === "ffd8ff";
++  if (ext === ".webp") return buf.subarray(0, 4).toString() === "RIFF" && buf.subarray(8, 12).toString() === "WEBP";
++  return false;
++}
++
++async function handleUpload(req, res, url) {
++  const kind = url.searchParams.get("kind");
++  if (!EXTS[kind]) throw new HttpError(400, "kind debe ser image o video");
++  const orig = path.basename(url.searchParams.get("name") || "archivo");
++  const ext = path.extname(orig).toLowerCase();
++  if (!EXTS[kind].includes(ext)) throw new HttpError(400, `Formato no permitido (${EXTS[kind].join(", ")})`);
++  const buf = await readBody(req, LIMITS[kind]);
++  if (!buf.length) throw new HttpError(400, "Archivo vacío");
++  if (!magicOk(buf, ext)) throw new HttpError(400, `El archivo no es un ${ext} válido`);
++
++  const base = path.basename(orig, ext).toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 30) || kind;
++  const name = `${base}-${Date.now().toString(36)}${crypto.randomBytes(2).toString("hex")}${ext}`;
++  await fsp.mkdir(MEDIA_DIR, { recursive: true });
++  await fsp.writeFile(path.join(MEDIA_DIR, name), buf);
++  sendJson(res, 200, { path: MEDIA_URL + name, bytes: buf.length });
++}
++
++/* ── Git ────────────────────────────────────────────────── */
++
++const GIT_PATHS = ["data", "assets/products"];
++
++async function gitStatus() {
++  const st = await run("git", ["status", "--porcelain", "--", ...GIT_PATHS]);
++  const br = await run("git", ["rev-parse", "--abbrev-ref", "HEAD"]);
++  if (st.code !== 0) return { ok: false, error: st.stderr.trim() || "git no disponible", changes: [] };
++  const changes = st.stdout.split("\n").filter(Boolean).map((l) => l.trim());
++  return { ok: true, branch: br.stdout.trim(), changes };
++}
++
++async function handlePublish(req, res) {
++  const body = JSON.parse((await readBody(req, 64 * 1024)).toString() || "{}");
++  const message = String(body.message || "").replace(/[\r\n]+/g, " ").trim().slice(0, 200) || "Actualizar catálogo";
++  const log = [];
++  const step = async (args, timeout) => {
++    const r = await run("git", args, timeout);
++    log.push(`$ git ${args.join(" ")}\n${(r.stdout + r.stderr).trim()}`);
++    return r;
++  };
++
++  const add = await step(["add", "-A", "--", ...GIT_PATHS]);
++  if (add.code !== 0) return sendJson(res, 500, { ok: false, error: "Falló git add", log });
++
++  const staged = await run("git", ["diff", "--cached", "--quiet", "--", ...GIT_PATHS]);
++  if (staged.code === 1) {
++    const commit = await step(["commit", "-m", message, "--only", "--", ...GIT_PATHS]);
++    if (commit.code !== 0) return sendJson(res, 500, { ok: false, error: "Falló el commit", log });
++  } else {
++    log.push("(no hay cambios nuevos para commitear)");
++  }
++
++  const push = await step(["push"], 120000);
++  if (push.code !== 0) {
++    return sendJson(res, 500, { ok: false, error: "El commit se hizo pero el push falló. Revisá tus credenciales/remoto y reintentá.", log });
++  }
++  sendJson(res, 200, { ok: true, log });
++}
++
++/* ── API ────────────────────────────────────────────────── */
++
++async function handleApi(req, res, url) {
++  if (req.headers["x-emma-admin"] !== "1") throw new HttpError(403, "Falta el header X-Emma-Admin");
++  const route = `${req.method} ${url.pathname}`;
++
++  if (route === "GET /api/products") return sendJson(res, 200, await readProducts());
++
++  if (route === "PUT /api/products") {
++    const raw = JSON.parse((await readBody(req, 5 * 1024 * 1024)).toString() || "null");
++    const list = normalizeProducts(raw);
++    await writeProducts(list);
++    const removed = await removeOrphans(list);
++    return sendJson(res, 200, { ok: true, count: list.length, removedFiles: removed });
++  }
++
++  if (route === "POST /api/upload") return handleUpload(req, res, url);
++  if (route === "GET /api/git") return sendJson(res, 200, await gitStatus());
++  if (route === "POST /api/publish") return handlePublish(req, res);
++
++  throw new HttpError(404, "Ruta de API inexistente");
++}
++
++/* ── Estáticos (con Range para que el video ande en Safari) ─ */
++
++async function handleStatic(req, res, url) {
++  if (req.method !== "GET" && req.method !== "HEAD") throw new HttpError(405, "Método no permitido");
++  let rel = decodeURIComponent(url.pathname);
++  if (rel === "/admin" || rel === "/admin/") rel = "/admin/dashboard.html";
++  if (rel.endsWith("/")) rel += "index.html";
++  const segs = rel.split("/").filter(Boolean);
++  if (segs.some((s) => s.startsWith(".") || s === "node_modules")) throw new HttpError(404, "No encontrado");
++  if (rel === "/admin/server.js") throw new HttpError(404, "No encontrado");
++
++  let file = path.join(ROOT, ...segs);
++  if (!file.startsWith(ROOT + path.sep)) throw new HttpError(404, "No encontrado");
++  let st = await fsp.stat(file).catch(() => null);
++  if (!st && !path.extname(file)) { file += ".html"; st = await fsp.stat(file).catch(() => null); } // cleanUrls
++  if (!st || !st.isFile()) throw new HttpError(404, "No encontrado");
++
++  const type = MIME[path.extname(file).toLowerCase()] || "application/octet-stream";
++  const headers = { "Content-Type": type, "Cache-Control": "no-store", "Accept-Ranges": "bytes" };
++  const range = /^bytes=(\d*)-(\d*)$/.exec(req.headers.range || "");
++  if (range && (range[1] || range[2])) {
++    let start = range[1] ? Number(range[1]) : st.size - Number(range[2]);
++    let end = range[1] && range[2] ? Number(range[2]) : st.size - 1;
++    start = Math.max(0, start); end = Math.min(end, st.size - 1);
++    if (start > end) { res.writeHead(416, { "Content-Range": `bytes */${st.size}` }); return res.end(); }
++    res.writeHead(206, { ...headers, "Content-Range": `bytes ${start}-${end}/${st.size}`, "Content-Length": end - start + 1 });
++    return req.method === "HEAD" ? res.end() : fs.createReadStream(file, { start, end }).pipe(res);
++  }
++  res.writeHead(200, { ...headers, "Content-Length": st.size });
++  if (req.method === "HEAD") return res.end();
++  fs.createReadStream(file).pipe(res);
++}
++
++/* ── Server ─────────────────────────────────────────────── */
++
++const server = http.createServer(async (req, res) => {
++  try {
++    if (!ALLOWED_HOSTS.has(String(req.headers.host || "").toLowerCase())) throw new HttpError(403, "Host no permitido");
++    const url = new URL(req.url, `http://${req.headers.host}`);
++    if (url.pathname.startsWith("/api/")) return await handleApi(req, res, url);
++    return await handleStatic(req, res, url);
++  } catch (err) {
++    const status = err instanceof HttpError ? err.status : err instanceof SyntaxError ? 400 : 500;
++    if (status === 500) console.error(err);
++    if (res.headersSent) return res.end();
++    sendJson(res, status, { error: status === 500 ? "Error interno" : err.message });
++  }
++});
++
++server.listen(PORT, HOST, () => {
++  console.log(`\n  Panel de admin:  http://localhost:${PORT}/admin/`);
++  console.log(`  Sitio (preview): http://localhost:${PORT}/\n`);
++});
+diff --git a/assets/products/.gitkeep b/assets/products/.gitkeep
+new file mode 100644
+index 0000000..e69de29
+diff --git a/carrito.html b/carrito.html
+index a7f470d..a0b3e71 100644
+--- a/carrito.html
++++ b/carrito.html
+@@ -193,8 +193,8 @@
+     <div class="container">
+       <div class="header-inner">
+         <a href="index.html" class="logo">
+-          <img class="logo-img-dark"  src="https://pztftznwvrsoipiuhwof.supabase.co/storage/v1/object/public/assets/logo/logo-dark.jpg"  alt="Emma"/>
+-          <img class="logo-img-light" src="https://pztftznwvrsoipiuhwof.supabase.co/storage/v1/object/public/assets/logo/logo-light.jpg" alt="Emma"/>
++          <img class="logo-img-dark"  src="/assets/logo/logo-dark.jpg"  alt="Emma"/>
++          <img class="logo-img-light" src="/assets/logo/logo-light.jpg" alt="Emma"/>
+         </a>
+         <nav class="nav">
+           <a href="index.html">Inicio</a>
+diff --git a/catalogo.html b/catalogo.html
+index c774aca..b285cca 100644
+--- a/catalogo.html
++++ b/catalogo.html
+@@ -9,9 +9,9 @@
+   <meta property="og:type" content="website"/>
+   <meta property="og:title" content="Catálogo — Emma Moda a tu Alcance"/>
+   <meta property="og:description" content="Explorá toda la colección de ropa y accesorios de Emma."/>
+-  <meta property="og:image" content="https://pztftznwvrsoipiuhwof.supabase.co/storage/v1/object/public/assets/logo/logo-light.jpg"/>
++  <meta property="og:image" content="https://moda-a-tu-alcance.vercel.app/assets/logo/logo-light.jpg"/>
+   <meta name="twitter:card" content="summary_large_image"/>
+-  <meta name="twitter:image" content="https://pztftznwvrsoipiuhwof.supabase.co/storage/v1/object/public/assets/logo/logo-light.jpg"/>
++  <meta name="twitter:image" content="https://moda-a-tu-alcance.vercel.app/assets/logo/logo-light.jpg"/>
+   <script>(function(){var t=localStorage.getItem('emma_theme')||(window.matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light');document.documentElement.setAttribute('data-theme',t);})();</script>
+   <link rel="stylesheet" href="css/styles.css"/>
+   <style>
+@@ -210,8 +210,8 @@
+     <div class="container">
+       <div class="header-inner">
+         <a href="index.html" class="logo">
+-          <img class="logo-img-dark"  src="https://pztftznwvrsoipiuhwof.supabase.co/storage/v1/object/public/assets/logo/logo-dark.jpg"  alt="Emma"/>
+-          <img class="logo-img-light" src="https://pztftznwvrsoipiuhwof.supabase.co/storage/v1/object/public/assets/logo/logo-light.jpg" alt="Emma"/>
++          <img class="logo-img-dark"  src="/assets/logo/logo-dark.jpg"  alt="Emma"/>
++          <img class="logo-img-light" src="/assets/logo/logo-light.jpg" alt="Emma"/>
+         </a>
+         <nav class="nav">
+           <a href="index.html">Inicio</a>
+@@ -348,8 +348,8 @@
+     <svg width="26" height="26" viewBox="0 0 24 24" fill="white"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z"/></svg>
+   </a>
+ 
+-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+-  <script src="js/supabase.js"></script>
++  <script src="js/catalog.js"></script>
++  <script src="js/video-limiter.js"></script>
+   <script src="js/data.js"></script>
+   <script src="js/theme.js"></script>
+   <script src="js/categories.js"></script>
+@@ -395,7 +395,7 @@
+       grid.innerHTML = lista.map(p => `
+         <a href="producto.html?id=${p.id}" class="product-card">
+           <div class="product-card-image">
+-            <img src="${p.imagenes[0]}" alt="${p.nombre}" loading="lazy"/>
++            ${cardMedia(p)}
+             <span class="product-card-quick">Ver producto</span>
+           </div>
+           <p class="product-card-name">${p.nombre}</p>
+diff --git a/checkout.html b/checkout.html
+index b73f986..1b133fe 100644
+--- a/checkout.html
++++ b/checkout.html
+@@ -280,12 +280,12 @@
+           <a href="index.html" class="logo">
+             <img
+               class="logo-img-dark"
+-              src="https://pztftznwvrsoipiuhwof.supabase.co/storage/v1/object/public/assets/logo/logo-dark.jpg"
++              src="/assets/logo/logo-dark.jpg"
+               alt="Emma"
+             />
+             <img
+               class="logo-img-light"
+-              src="https://pztftznwvrsoipiuhwof.supabase.co/storage/v1/object/public/assets/logo/logo-light.jpg"
++              src="/assets/logo/logo-light.jpg"
+               alt="Emma"
+             />
+           </a>
+@@ -495,14 +495,13 @@
+                     line-height: 1.7;
+                   "
+                 >
+-                  📱 <strong>¿Cómo sigue?</strong> Una vez que confirmes el
+-                  pedido, te vamos a contactar por WhatsApp para verificar el
+-                  stock, coordinar el envío y enviarte el link de pago de
+-                  Mercado Pago.
++                  📱 <strong>¿Cómo sigue?</strong> En el siguiente paso nos vas a enviar el pedido por WhatsApp.
++                  Ahí verificamos el stock, coordinamos el envío y te pasamos
++                  el link de pago de Mercado Pago.
+                 </p>
+               </div>
+ 
+-              <button type="submit" class="submit-btn">Enviar pedido →</button>
++              <button type="submit" class="submit-btn">Continuar →</button>
+             </form>
+           </div>
+ 
+@@ -526,8 +525,6 @@
+       </div>
+     </div>
+ 
+-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+-    <script src="js/supabase.js"></script>
+     <script src="js/data.js"></script>
+     <script src="js/theme.js"></script>
+     <script>
+@@ -597,10 +594,16 @@
+ 
+           const btn = document.querySelector(".submit-btn");
+           btn.disabled = true;
+-          btn.textContent = "Enviando pedido...";
++          btn.textContent = "Un momento...";
+ 
+           try {
+-            const savedPedido = await db_guardarPedido(pedido);
++            // Sin base de datos: el pedido se arma acá y se envía recién al tocar el botón de WhatsApp
++            const savedPedido = {
++              ...pedido,
++              id: Math.floor(Date.now() / 1000) % 1000000,
++              estado: "pendiente",
++              created_at: new Date().toISOString(),
++            };
+             sessionStorage.setItem(
+               "emma_pedido_confirmado",
+               JSON.stringify(savedPedido),
+@@ -610,9 +613,9 @@
+           } catch (err) {
+             console.error(err);
+             btn.disabled = false;
+-            btn.textContent = "Enviar pedido →";
++            btn.textContent = "Continuar →";
+             alert(
+-              "Hubo un error al enviar el pedido. Por favor intentá de nuevo.",
++              "Hubo un error. Por favor intentá de nuevo.",
+             );
+           }
+         });
+diff --git a/css/styles.css b/css/styles.css
+index dca4131..3332954 100644
+--- a/css/styles.css
++++ b/css/styles.css
+@@ -827,3 +827,39 @@ button { cursor: pointer; font-family: var(--font-sans); border: none; backgroun
+ .theme-icon-dark  { display: none; }
+ [data-theme="dark"] .theme-icon-light { display: none; }
+ [data-theme="dark"] .theme-icon-dark  { display: flex; }
++
++/* ── Videos (cartas + detalle) ─────────────────────────── */
++.product-card-image video.card-video {
++  position: absolute;
++  inset: 0;
++  width: 100%;
++  height: 100%;
++  object-fit: cover;
++  opacity: 0;
++  pointer-events: none;
++  transition: opacity 0.3s ease, transform 0.4s ease;
++}
++.product-card-image video.card-video.is-playing { opacity: 1; }
++.product-card:hover .product-card-image video.card-video { transform: scale(1.04); }
++
++.gallery-main video {
++  width: 100%;
++  height: 100%;
++  object-fit: cover;
++  display: block;
++  background: var(--gray-100);
++}
++.gallery-thumb { position: relative; }
++.gallery-thumb video { width: 100%; height: 100%; object-fit: cover; pointer-events: none; }
++.thumb-play {
++  position: absolute;
++  right: 4px;
++  bottom: 4px;
++  font-size: 9px;
++  line-height: 1;
++  padding: 3px 4px;
++  border-radius: 3px;
++  color: #fff;
++  background: rgba(0, 0, 0, 0.6);
++  pointer-events: none;
++}
+diff --git a/data/products.json b/data/products.json
+new file mode 100644
+index 0000000..fe51488
+--- /dev/null
++++ b/data/products.json
+@@ -0,0 +1 @@
++[]
+diff --git a/faq.html b/faq.html
+index 07624ec..0efbc99 100644
+--- a/faq.html
++++ b/faq.html
+@@ -256,8 +256,8 @@
+     <div class="container">
+       <div class="header-inner">
+         <a href="index.html" class="logo" aria-label="Emma - Inicio">
+-          <img class="logo-img-dark"  src="https://pztftznwvrsoipiuhwof.supabase.co/storage/v1/object/public/assets/logo/logo-dark.jpg"  alt="Emma"/>
+-          <img class="logo-img-light" src="https://pztftznwvrsoipiuhwof.supabase.co/storage/v1/object/public/assets/logo/logo-light.jpg" alt="Emma"/>
++          <img class="logo-img-dark"  src="/assets/logo/logo-dark.jpg"  alt="Emma"/>
++          <img class="logo-img-light" src="/assets/logo/logo-light.jpg" alt="Emma"/>
+         </a>
+         <nav class="nav" aria-label="Navegación principal">
+           <a href="index.html">Inicio</a>
+@@ -596,7 +596,7 @@
+       <div class="footer-grid">
+ 
+         <div class="footer-brand">
+-          <img src="https://pztftznwvrsoipiuhwof.supabase.co/storage/v1/object/public/assets/logo/logo-dark.jpg" alt="Emma" class="footer-logo" />
++          <img src="/assets/logo/logo-dark.jpg" alt="Emma" class="footer-logo" />
+           <p>Indumentaria femenina y masculina.<br>Calidad, estilo y precio justo en cada prenda.</p>
+           <div class="footer-social">
+             <a href="https://www.instagram.com/moda.atualcance20" target="_blank" rel="noopener" aria-label="Instagram">
+diff --git a/index.html b/index.html
+index 8cb67a9..822e316 100644
+--- a/index.html
++++ b/index.html
+@@ -9,9 +9,9 @@
+   <meta property="og:type" content="website"/>
+   <meta property="og:title" content="Emma — Moda a tu Alcance"/>
+   <meta property="og:description" content="Ropa y accesorios para mujer y hombre. Elegí tu look y recibilo en casa."/>
+-  <meta property="og:image" content="https://pztftznwvrsoipiuhwof.supabase.co/storage/v1/object/public/assets/logo/logo-light.jpg"/>
++  <meta property="og:image" content="https://moda-a-tu-alcance.vercel.app/assets/logo/logo-light.jpg"/>
+   <meta name="twitter:card" content="summary_large_image"/>
+-  <meta name="twitter:image" content="https://pztftznwvrsoipiuhwof.supabase.co/storage/v1/object/public/assets/logo/logo-light.jpg"/>
++  <meta name="twitter:image" content="https://moda-a-tu-alcance.vercel.app/assets/logo/logo-light.jpg"/>
+   <script>(function(){var t=localStorage.getItem('emma_theme')||(window.matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light');document.documentElement.setAttribute('data-theme',t);})();</script>
+   <link rel="stylesheet" href="css/styles.css" />
+   <style>
+@@ -118,8 +118,8 @@
+ 
+         <!-- Logo -->
+         <a href="index.html" class="logo" aria-label="Emma - Inicio">
+-          <img class="logo-img-dark"  src="https://pztftznwvrsoipiuhwof.supabase.co/storage/v1/object/public/assets/logo/logo-dark.jpg"  alt="Emma"/>
+-          <img class="logo-img-light" src="https://pztftznwvrsoipiuhwof.supabase.co/storage/v1/object/public/assets/logo/logo-light.jpg" alt="Emma"/>
++          <img class="logo-img-dark"  src="/assets/logo/logo-dark.jpg"  alt="Emma"/>
++          <img class="logo-img-light" src="/assets/logo/logo-light.jpg" alt="Emma"/>
+         </a>
+ 
+         <!-- Desktop Nav -->
+@@ -180,7 +180,7 @@
+         </div>
+         <div class="home-hero-img">
+           <img
+-            src="https://pztftznwvrsoipiuhwof.supabase.co/storage/v1/object/public/assets/hero/hero.jpg"
++            src="/assets/hero/hero.jpg"
+             alt="Look de temporada"
+             loading="lazy"
+             decoding="async"
+@@ -225,16 +225,16 @@
+ 
+       <div class="instagram-grid">
+         <a href="https://www.instagram.com/moda.atualcance20" class="instagram-grid-item" target="_blank" rel="noopener">
+-          <img src="https://pztftznwvrsoipiuhwof.supabase.co/storage/v1/object/public/assets/instagram/insta.png" alt="Instagram 1" loading="lazy"/>
++          <img src="/assets/instagram/insta.png" alt="Instagram 1" loading="lazy"/>
+         </a>
+         <a href="https://www.instagram.com/moda.atualcance20" class="instagram-grid-item" target="_blank" rel="noopener">
+-          <img src="https://pztftznwvrsoipiuhwof.supabase.co/storage/v1/object/public/assets/instagram/insta2.png" alt="Instagram 2" loading="lazy"/>
++          <img src="/assets/instagram/insta2.png" alt="Instagram 2" loading="lazy"/>
+         </a>
+         <a href="https://www.instagram.com/moda.atualcance20" class="instagram-grid-item" target="_blank" rel="noopener">
+-          <img src="https://pztftznwvrsoipiuhwof.supabase.co/storage/v1/object/public/assets/instagram/insta3.jpeg" alt="Instagram 3" loading="lazy"/>
++          <img src="/assets/instagram/insta3.jpeg" alt="Instagram 3" loading="lazy"/>
+         </a>
+         <a href="https://www.instagram.com/moda.atualcance20" class="instagram-grid-item" target="_blank" rel="noopener">
+-          <img src="https://pztftznwvrsoipiuhwof.supabase.co/storage/v1/object/public/assets/instagram/insta4.png" alt="Instagram 4" loading="lazy"/>
++          <img src="/assets/instagram/insta4.png" alt="Instagram 4" loading="lazy"/>
+         </a>
+       </div>
+ 
+@@ -250,7 +250,7 @@
+       <div class="footer-grid">
+ 
+         <div class="footer-brand">
+-          <img src="https://pztftznwvrsoipiuhwof.supabase.co/storage/v1/object/public/assets/logo/logo-dark.jpg" alt="Emma" class="footer-logo" />
++          <img src="/assets/logo/logo-dark.jpg" alt="Emma" class="footer-logo" />
+           <p>Indumentaria femenina y masculina.<br>Calidad, estilo y precio justo en cada prenda.</p>
+           <div class="footer-social">
+             <a href="https://www.instagram.com/moda.atualcance20" target="_blank" rel="noopener" aria-label="Instagram">
+@@ -329,8 +329,8 @@
+   </a>
+ 
+   <!-- ── Scripts ───────────────────────────────────── -->
+-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+-  <script src="js/supabase.js"></script>
++  <script src="js/catalog.js"></script>
++  <script src="js/video-limiter.js"></script>
+   <script src="js/data.js"></script>
+   <script src="js/theme.js"></script>
+   <script>
+@@ -365,7 +365,7 @@
+       return `
+         <a href="producto.html?id=${p.id}" class="product-card">
+           <div class="product-card-image">
+-            <img src="${esc(img)}" alt="${esc(p.nombre)}" ${eager ? '' : 'loading="lazy"'} decoding="async"/>
++            ${cardMedia(p, { eager })}
+             <span class="product-card-quick">Ver producto</span>
+           </div>
+           <p class="product-card-name">${esc(p.nombre)}</p>
+diff --git a/js/catalog.js b/js/catalog.js
+new file mode 100644
+index 0000000..f9b67e1
+--- /dev/null
++++ b/js/catalog.js
+@@ -0,0 +1,68 @@
++/* ============================================================
++   EMMA — Catálogo estático
++   Los productos viven en data/products.json (lo edita el panel
++   local: node admin/server.js) y se publican con git push.
++   ============================================================ */
++
++/* ── Cache global de productos ─────────────────────────────
++   Se llena con loadProductos() y se usa en todo el sitio.
++   ──────────────────────────────────────────────────────── */
++let PRODUCTOS = [];
++
++async function loadProductos() {
++  try {
++    // no-cache: revalida con el servidor (ETag) para ver cambios al toque
++    const res = await fetch("/data/products.json", { cache: "no-cache" });
++    if (!res.ok) throw new Error("HTTP " + res.status);
++    const data = await res.json();
++    PRODUCTOS = (Array.isArray(data) ? data : []).map((p) => ({
++      ...p,
++      imagenes: p.imagenes || [],
++      videos: p.videos || [],
++      talles: p.talles || [],
++      colores: p.colores || [],
++    }));
++  } catch (err) {
++    console.error("Error cargando productos:", err);
++    PRODUCTOS = [];
++  }
++}
++
++/* ── Helpers de catálogo (sincrónicos, usan el cache) ───── */
++
++function getProductos({ categoria, genero, sale, destacado } = {}) {
++  let lista = [...PRODUCTOS];
++  if (categoria) lista = lista.filter((p) => p.categoria === categoria);
++  if (genero) lista = lista.filter((p) => p.genero === genero);
++  if (sale) lista = lista.filter((p) => p.sale);
++  if (destacado) lista = lista.filter((p) => p.destacado);
++  return lista;
++}
++
++function getProductoById(id) {
++  return PRODUCTOS.find((p) => p.id === Number(id)) || null;
++}
++
++/* ── Media de las cartas ───────────────────────────────────
++   Imagen siempre (es el fallback si el navegador no soporta
++   WebM) + video encima si el producto tiene. El video queda
++   invisible hasta que realmente empieza a reproducirse.
++   La reproducción la controla js/video-limiter.js.
++   ──────────────────────────────────────────────────────── */
++function escAttr(s) {
++  return String(s ?? "").replace(
++    /[&<>"']/g,
++    (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c],
++  );
++}
++
++function cardMedia(p, { eager = false } = {}) {
++  const img = (p.imagenes || [])[0] || "";
++  const vid = (p.videos || [])[0];
++  return (
++    `<img src="${escAttr(img)}" alt="${escAttr(p.nombre)}" ${eager ? "" : 'loading="lazy"'} decoding="async"/>` +
++    (vid
++      ? `<video class="card-video" data-autoplay src="${escAttr(vid)}" muted loop playsinline preload="none" tabindex="-1" aria-hidden="true"></video>`
++      : "")
++  );
++}
+diff --git a/js/categories.js b/js/categories.js
+index 444851b..e1dfd8d 100644
+--- a/js/categories.js
++++ b/js/categories.js
+@@ -7,7 +7,7 @@
+  * Estructura de cada ítem:
+  *   slug       → valor usado en ?cat= y en la DB (campo `categoria`)
+  *   nombre     → label visible en toda la UI
+- *   imagen     → URL de la imagen de portada (Supabase Storage)
++ *   imagen     → URL de la imagen de portada (/assets/category-images/)
+  *   cta        → texto del botón/link en la card de home
+  */
+ 
+@@ -15,37 +15,37 @@ const CATEGORIES = [
+   {
+     slug:   'buzos',
+     nombre: 'Buzos y Suéteres',
+-    imagen: 'https://pztftznwvrsoipiuhwof.supabase.co/storage/v1/object/public/assets/category-images/sueter.jpeg',
++    imagen: '/assets/category-images/sueter.jpeg',
+     cta:    'Ver colección'
+   },
+   {
+     slug:   'remeras',
+     nombre: 'Remeras',
+-    imagen: 'https://pztftznwvrsoipiuhwof.supabase.co/storage/v1/object/public/assets/category-images/remeras.jpeg',
++    imagen: '/assets/category-images/remeras.jpeg',
+     cta:    'Ver colección'
+   },
+   {
+     slug:   'bodies',
+     nombre: 'Bodies',
+-    imagen: 'https://pztftznwvrsoipiuhwof.supabase.co/storage/v1/object/public/assets/category-images/body.jpeg',
++    imagen: '/assets/category-images/body.jpeg',
+     cta:    'Ver colección'
+   },
+   {
+     slug:   'pantalones',
+     nombre: 'Pantalones y Jeans',
+-    imagen: 'https://pztftznwvrsoipiuhwof.supabase.co/storage/v1/object/public/assets/category-images/jeans.jpeg',
++    imagen: '/assets/category-images/jeans.jpeg',
+     cta:    'Ver colección'
+   },
+   {
+     slug:   'camperas',
+     nombre: 'Camperas y Chalecos',
+-    imagen: 'https://pztftznwvrsoipiuhwof.supabase.co/storage/v1/object/public/assets/category-images/camperas.jpeg',
++    imagen: '/assets/category-images/camperas.jpeg',
+     cta:    'Ver colección'
+   },
+   {
+     slug:   'maquillaje',
+     nombre: 'Maquillaje y Belleza',
+-    imagen: 'https://pztftznwvrsoipiuhwof.supabase.co/storage/v1/object/public/assets/category-images/maquillaje.jpeg',
++    imagen: '/assets/category-images/maquillaje.jpeg',
+     cta:    'Ver tendencias'
+   }
+ ];
+diff --git a/js/data.js b/js/data.js
+index cd74998..ad0f2e2 100644
+--- a/js/data.js
++++ b/js/data.js
+@@ -1,6 +1,6 @@
+ /* ============================================================
+-   EMMA — Utilidades de carrito y auth de admin
+-   (Productos y pedidos ahora viven en Supabase → js/supabase.js)
++   EMMA — Utilidades de carrito y formato
++   (El catálogo se lee de data/products.json → js/catalog.js)
+    ============================================================ */
+ 
+ function formatPrecio(n) {
+@@ -62,6 +62,3 @@ function actualizarBadge() {
+   if (el) el.textContent = cantidadCarrito();
+ }
+ 
+-/* ── Admin auth (Supabase Auth) ──────────────────────────── */
+-// La sesión la maneja Supabase internamente (localStorage).
+-// Usar db.auth.getSession() para verificar, db.auth.signOut() para cerrar.
+diff --git a/js/supabase.js b/js/supabase.js
+deleted file mode 100644
+index 7ba38af..0000000
+--- a/js/supabase.js
++++ /dev/null
+@@ -1,140 +0,0 @@
+-/* ============================================================
+-   EMMA — Supabase client + helpers de base de datos
+-   ============================================================ */
+-
+-const SUPABASE_URL = "https://pztftznwvrsoipiuhwof.supabase.co";
+-const SUPABASE_KEY =
+-  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InB6dGZ0em53dnJzb2lwaXVod29mIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ5MTA3NzUsImV4cCI6MjA5MDQ4Njc3NX0.lfQS7GldfgAvQuXXBnOG_Rj6idNGsPVrOnho9uY4ZAI";
+-
+-const db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+-
+-/* ── Cache global de productos ─────────────────────────────
+-   Se llena con loadProductos() y se usa en todo el sitio.
+-   ──────────────────────────────────────────────────────── */
+-let PRODUCTOS = [];
+-
+-async function loadProductos() {
+-  const { data, error } = await db
+-    .from("products")
+-    .select("*")
+-    .order("created_at", { ascending: false });
+-
+-  if (error) {
+-    console.error("Error cargando productos:", error.message);
+-    return;
+-  }
+-  PRODUCTOS = data || [];
+-}
+-
+-/* ── Helpers de catálogo (sincrónicos, usan el cache) ───── */
+-
+-function getProductos({ categoria, genero, sale, destacado } = {}) {
+-  let lista = [...PRODUCTOS];
+-  if (categoria) lista = lista.filter((p) => p.categoria === categoria);
+-  if (genero) lista = lista.filter((p) => p.genero === genero);
+-  if (sale) lista = lista.filter((p) => p.sale);
+-  if (destacado) lista = lista.filter((p) => p.destacado);
+-  return lista;
+-}
+-
+-function getProductoById(id) {
+-  return PRODUCTOS.find((p) => p.id === Number(id)) || null;
+-}
+-
+-/* ── Productos CRUD ────────────────────────────────────── */
+-
+-async function db_insertProduct(prod) {
+-  const { id, ...rest } = prod; // dejar que Supabase genere el id
+-  const { data, error } = await db
+-    .from("products")
+-    .insert([rest])
+-    .select()
+-    .single();
+-  if (error) throw error;
+-  return data;
+-}
+-
+-async function db_updateProduct(id, prod) {
+-  const { id: _id, created_at, ...rest } = prod;
+-  const { data, error } = await db
+-    .from("products")
+-    .update(rest)
+-    .eq("id", id)
+-    .select()
+-    .single();
+-  if (error) throw error;
+-  return data;
+-}
+-
+-async function db_deleteProduct(id) {
+-  const { error } = await db.from("products").delete().eq("id", id);
+-  if (error) throw error;
+-}
+-
+-/* ── Pedidos CRUD ──────────────────────────────────────── */
+-
+-async function db_getPedidos() {
+-  const { data, error } = await db
+-    .from("orders")
+-    .select("*")
+-    .order("created_at", { ascending: false });
+-  if (error) {
+-    console.error("Error cargando pedidos:", error.message);
+-    return [];
+-  }
+-  return data || [];
+-}
+-
+-async function db_guardarPedido(pedido) {
+-  const { data: id, error } = await db.rpc("crear_pedido", {
+-    p_nombre: pedido.nombre,
+-    p_whatsapp: pedido.whatsapp,
+-    p_direccion: pedido.direccion,
+-    p_localidad: pedido.localidad,
+-    p_provincia: pedido.provincia || "",
+-    p_nota: pedido.nota || "",
+-    p_items: pedido.items,
+-    p_total: pedido.total,
+-  });
+-  if (error) throw error;
+-
+-  // Mismo formato que antes: pedido-confirmado.html usa data.id, nombre, items, etc.
+-  return {
+-    ...pedido,
+-    id,
+-    provincia: pedido.provincia || "",
+-    nota: pedido.nota || "",
+-    estado: "pendiente",
+-    created_at: new Date().toISOString(),
+-  };
+-}
+-
+-async function db_actualizarEstadoPedido(id, estado) {
+-  const { error } = await db.from("orders").update({ estado }).eq("id", id);
+-  if (error) throw error;
+-}
+-
+-/* ── Storage ────────────────────────────────────────────── */
+-
+-async function storage_uploadProductImage(file) {
+-  const ext = file.name.split(".").pop().toLowerCase();
+-  const fileName = `${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
+-  const path = `product-images/${fileName}`;
+-
+-  const { error } = await db.storage
+-    .from("assets")
+-    .upload(path, file, { contentType: file.type, upsert: false });
+-
+-  if (error) throw error;
+-  return `${SUPABASE_URL}/storage/v1/object/public/assets/${path}`;
+-}
+-
+-async function storage_deleteImage(url) {
+-  const marker = "/object/public/assets/";
+-  const idx = url.indexOf(marker);
+-  if (idx === -1) return; // not a storage URL, skip
+-  const path = url.slice(idx + marker.length);
+-  const { error } = await db.storage.from("assets").remove([path]);
+-  if (error)
+-    console.warn("No se pudo eliminar imagen del storage:", error.message);
+-}
+diff --git a/js/video-limiter.js b/js/video-limiter.js
+new file mode 100644
+index 0000000..de7ad2a
+--- /dev/null
++++ b/js/video-limiter.js
+@@ -0,0 +1,91 @@
++/* ============================================================
++   EMMA — Límite de videos reproduciéndose a la vez
++   - Escritorio: máx. 4 · Móvil (≤768px): máx. 2
++   - Solo cuentan los videos a la vista (≥50% visibles)
++   - Si hay más a la vista que el máximo, se reproducen los
++     primeros en orden de lectura (arriba→abajo, izq→der)
++   - Funciona con cualquier <video data-autoplay> agregado al
++     DOM, aunque se renderice después (MutationObserver)
++   ============================================================ */
++(function () {
++  const mqMobile = window.matchMedia("(max-width: 768px)");
++  const mqReduce = window.matchMedia("(prefers-reduced-motion: reduce)");
++  const maxPlaying = () => (mqMobile.matches ? 2 : 4);
++  const visible = new Set();
++  let queued = false;
++
++  function play(v) {
++    if (!v.paused) return;
++    v.muted = true;
++    const p = v.play();
++    if (p && p.catch) p.catch(() => {}); // autoplay bloqueado (ahorro de batería, etc.)
++  }
++  function pause(v) {
++    if (!v.paused) v.pause();
++  }
++
++  function rebalance() {
++    queued = false;
++    const list = [...visible].filter((v) => v.isConnected);
++    visible.clear();
++    list.forEach((v) => visible.add(v));
++
++    const pos = new Map(list.map((v) => [v, v.getBoundingClientRect()]));
++    list.sort((a, b) => {
++      const ra = pos.get(a), rb = pos.get(b);
++      return Math.round(ra.top / 10) - Math.round(rb.top / 10) || ra.left - rb.left;
++    });
++
++    const allowed = new Set(document.hidden ? [] : list.slice(0, maxPlaying()));
++    list.forEach((v) => (allowed.has(v) ? play(v) : pause(v)));
++  }
++  function schedule() {
++    if (!queued) {
++      queued = true;
++      requestAnimationFrame(rebalance);
++    }
++  }
++
++  const io = new IntersectionObserver(
++    (entries) => {
++      entries.forEach((e) => {
++        const halfViewport = e.intersectionRect.height >= window.innerHeight * 0.5;
++        if (e.intersectionRatio >= 0.5 || halfViewport) {
++          visible.add(e.target);
++        } else {
++          visible.delete(e.target);
++          pause(e.target);
++        }
++      });
++      schedule();
++    },
++    { threshold: [0, 0.5, 1] },
++  );
++
++  function track(v) {
++    if (v.__vl) return;
++    v.__vl = true;
++    v.muted = true;
++    v.addEventListener("playing", () => v.classList.add("is-playing"));
++    v.addEventListener("error", () => v.classList.remove("is-playing"));
++    if (mqReduce.matches) return; // movimiento reducido: sin autoplay (la imagen queda como fallback)
++    io.observe(v);
++  }
++
++  function scan(root) {
++    if (root.nodeType !== 1) return;
++    if (root.matches("video[data-autoplay]")) track(root);
++    root.querySelectorAll("video[data-autoplay]").forEach(track);
++  }
++
++  new MutationObserver((muts) => {
++    muts.forEach((m) => m.addedNodes.forEach(scan));
++    schedule(); // por si se quitaron videos del DOM
++  }).observe(document.documentElement, { childList: true, subtree: true });
++
++  document.addEventListener("visibilitychange", schedule);
++  window.addEventListener("resize", schedule);
++  (mqMobile.addEventListener ? mqMobile.addEventListener.bind(mqMobile, "change") : mqMobile.addListener.bind(mqMobile))(schedule);
++
++  scan(document.documentElement);
++})();
+diff --git a/pedido-confirmado.html b/pedido-confirmado.html
+index 4a88b36..09ea6af 100644
+--- a/pedido-confirmado.html
++++ b/pedido-confirmado.html
+@@ -3,7 +3,7 @@
+ <head>
+   <meta charset="UTF-8"/>
+   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+-  <title>¡Pedido recibido! — Emma Moda a tu Alcance</title>
++  <title>Último paso —  Emma Moda a tu Alcance</title>
+   <link rel="icon" type="image/svg+xml" href="/favicon.svg"/>
+   <script>(function(){var t=localStorage.getItem('emma_theme')||(window.matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light');document.documentElement.setAttribute('data-theme',t);})();</script>
+   <link rel="stylesheet" href="css/styles.css"/>
+@@ -164,8 +164,8 @@
+     <div class="container">
+       <div class="header-inner">
+         <a href="index.html" class="logo">
+-          <img class="logo-img-dark"  src="https://pztftznwvrsoipiuhwof.supabase.co/storage/v1/object/public/assets/logo/logo-dark.jpg"  alt="Emma"/>
+-          <img class="logo-img-light" src="https://pztftznwvrsoipiuhwof.supabase.co/storage/v1/object/public/assets/logo/logo-light.jpg" alt="Emma"/>
++          <img class="logo-img-dark"  src="/assets/logo/logo-dark.jpg"  alt="Emma"/>
++          <img class="logo-img-light" src="/assets/logo/logo-light.jpg" alt="Emma"/>
+         </a>
+         <div class="header-actions">
+           <button class="theme-toggle" onclick="toggleTheme()" aria-label="Cambiar tema">
+@@ -223,10 +223,10 @@
+ 
+       card.innerHTML = `
+         <div class="confirm-icon">✅</div>
+-        <h1 class="confirm-title">¡Pedido recibido!</h1>
++        <h1 class="confirm-title">¡Casi listo!</h1>
+         <p class="confirm-sub">
+-          Gracias <strong>${data.nombre.split(' ')[0]}</strong> por tu compra.
+-          Ahora necesitamos que nos contactes por WhatsApp para confirmar el stock y coordinar el pago y el envío.
++          Gracias <strong>${data.nombre.split(' ')[0]}</strong>. Tu pedido <strong>todavía no fue enviado</strong>:
++          tocá el botón de abajo para mandárnoslo por WhatsApp y así confirmar el stock y coordinar el pago y el envío.
+         </p>
+ 
+         <div class="order-number">
+diff --git a/producto.html b/producto.html
+index 237aa8e..38181fb 100644
+--- a/producto.html
++++ b/producto.html
+@@ -7,9 +7,9 @@
+   <link rel="icon" type="image/svg+xml" href="/favicon.svg"/>
+   <meta property="og:type" content="website"/>
+   <meta property="og:title" content="Emma — Moda a tu Alcance"/>
+-  <meta property="og:image" content="https://pztftznwvrsoipiuhwof.supabase.co/storage/v1/object/public/assets/logo/logo-light.jpg"/>
++  <meta property="og:image" content="https://moda-a-tu-alcance.vercel.app/assets/logo/logo-light.jpg"/>
+   <meta name="twitter:card" content="summary_large_image"/>
+-  <meta name="twitter:image" content="https://pztftznwvrsoipiuhwof.supabase.co/storage/v1/object/public/assets/logo/logo-light.jpg"/>
++  <meta name="twitter:image" content="https://moda-a-tu-alcance.vercel.app/assets/logo/logo-light.jpg"/>
+   <script>(function(){var t=localStorage.getItem('emma_theme')||(window.matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light');document.documentElement.setAttribute('data-theme',t);})();</script>
+   <link rel="stylesheet" href="css/styles.css"/>
+   <style>
+@@ -280,8 +280,8 @@
+     <div class="container">
+       <div class="header-inner">
+         <a href="index.html" class="logo">
+-          <img class="logo-img-dark"  src="https://pztftznwvrsoipiuhwof.supabase.co/storage/v1/object/public/assets/logo/logo-dark.jpg"  alt="Emma"/>
+-          <img class="logo-img-light" src="https://pztftznwvrsoipiuhwof.supabase.co/storage/v1/object/public/assets/logo/logo-light.jpg" alt="Emma"/>
++          <img class="logo-img-dark"  src="/assets/logo/logo-dark.jpg"  alt="Emma"/>
++          <img class="logo-img-light" src="/assets/logo/logo-light.jpg" alt="Emma"/>
+         </a>
+         <nav class="nav">
+           <a href="index.html">Inicio</a>
+@@ -324,8 +324,8 @@
+     <svg width="26" height="26" viewBox="0 0 24 24" fill="white"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z"/></svg>
+   </a>
+ 
+-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+-  <script src="js/supabase.js"></script>
++  <script src="js/catalog.js"></script>
++  <script src="js/video-limiter.js"></script>
+   <script src="js/data.js"></script>
+   <script src="js/theme.js"></script>
+   <script>
+@@ -341,10 +341,28 @@
+     let selTalle = '', selColor = '', qty = 1, currentProduct = null;
+ 
+     // ── Handlers ──────────────────────────────────────
+-    function setImg(src, el) {
+-      document.getElementById('main-img').src = src;
++    // ── Galería: videos primero, después imágenes ───────
++    let MEDIA = [];
++
++    function mediaMain(m) {
++      if (!m) return '';
++      if (m.type === 'video') {
++        const poster = (currentProduct.imagenes || [])[0] || '';
++        return `<video id="main-media" data-autoplay src="${m.src}" poster="${poster}" muted loop playsinline controls preload="metadata" onerror="mediaFallback()"></video>`;
++      }
++      return `<img id="main-media" src="${m.src}" alt="${currentProduct.nombre}"/>`;
++    }
++
++    function setMedia(i, el) {
++      document.getElementById('gallery-main').innerHTML = mediaMain(MEDIA[i]);
+       document.querySelectorAll('.gallery-thumb').forEach(t => t.classList.remove('active'));
+-      el.classList.add('active');
++      if (el) el.classList.add('active');
++    }
++
++    // Si el navegador no soporta WebM, se muestra la primera imagen
++    function mediaFallback() {
++      const i = MEDIA.findIndex(m => m.type === 'image');
++      if (i > -1) setMedia(i, document.querySelectorAll('.gallery-thumb')[i]);
+     }
+ 
+     function selectTalle(t, el) {
+@@ -403,6 +421,7 @@
+       const id = new URLSearchParams(location.search).get('id');
+       const p  = getProductoById(id);
+       currentProduct = p;
++      if (p) MEDIA = [...(p.videos || []).map(src => ({ type: 'video', src })), ...(p.imagenes || []).map(src => ({ type: 'image', src }))];
+ 
+       if (!p) {
+         app.innerHTML = `
+@@ -435,14 +454,14 @@
+ 
+               <!-- Gallery -->
+               <div class="gallery">
+-                <div class="gallery-main">
+-                  <img id="main-img" src="${p.imagenes[0]}" alt="${p.nombre}"/>
+-                </div>
+-                ${p.imagenes.length > 1 ? `
++                <div class="gallery-main" id="gallery-main">${mediaMain(MEDIA[0])}</div>
++                ${MEDIA.length > 1 ? `
+                 <div class="gallery-thumbs">
+-                  ${p.imagenes.map((img, i) => `
+-                    <div class="gallery-thumb ${i===0?'active':''}" onclick="setImg('${img}', this)">
+-                      <img src="${img}" alt="Vista ${i+1}" loading="lazy"/>
++                  ${MEDIA.map((m, i) => `
++                    <div class="gallery-thumb ${i===0?'active':''}" onclick="setMedia(${i}, this)">
++                      ${m.type === 'video'
++                        ? `<video src="${m.src}#t=0.1" muted playsinline preload="metadata" tabindex="-1"></video><span class="thumb-play">▶</span>`
++                        : `<img src="${m.src}" alt="Vista ${i+1}" loading="lazy"/>`}
+                     </div>
+                   `).join('')}
+                 </div>` : ''}
+@@ -534,7 +553,7 @@
+         rGrid.innerHTML = related.map(r => `
+           <a href="producto.html?id=${r.id}" class="product-card">
+             <div class="product-card-image">
+-              <img src="${r.imagenes[0]}" alt="${r.nombre}" loading="lazy"/>
++              ${cardMedia(r)}
+               <span class="product-card-quick">Ver producto</span>
+             </div>
+             <p class="product-card-name">${r.nombre}</p>
+diff --git a/vercel.json b/vercel.json
+index 20041ca..a0ce93e 100644
+--- a/vercel.json
++++ b/vercel.json
+@@ -1,4 +1,8 @@
+ {
+   "cleanUrls": true,
+-  "trailingSlash": false
++  "trailingSlash": false,
++  "redirects": [
++    { "source": "/admin", "destination": "/", "permanent": false },
++    { "source": "/admin/:path*", "destination": "/", "permanent": false }
++  ]
+ }

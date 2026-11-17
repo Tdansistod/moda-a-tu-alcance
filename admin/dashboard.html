@@ -3,9 +3,9 @@
 <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Dashboard — Emma Admin</title>
+  <title>Catálogo — Emma Admin (local)</title>
   <link rel="icon" type="image/svg+xml" href="/favicon.svg"/>
-  <link rel="stylesheet" href="../css/styles.css"/>
+  <link rel="stylesheet" href="/css/styles.css"/>
   <style>
     * { box-sizing: border-box; }
     body { background: #f4f4f6; min-height: 100vh; overflow-x: hidden; }
@@ -543,166 +543,38 @@
       .modal-footer .btn,
       .modal-footer .action-btn { flex: 1; text-align: center; justify-content: center; }
     }
+    .img-thumb video { display:block; }
+    .img-thumb-remove { z-index: 2; }
   </style>
 </head>
-<body style="display:none">
-
-  <!-- ── Admin Header ── -->
+<body>
   <header class="admin-header">
     <div class="admin-header-left">
-      <button class="admin-hamburger" id="mobile-menu-btn" onclick="toggleMobileMenu()" aria-label="Menú">
-        <span></span><span></span><span></span>
-      </button>
-      <img src="https://pztftznwvrsoipiuhwof.supabase.co/storage/v1/object/public/assets/logo/logo-dark.jpg" alt="Emma" class="admin-logo"/>
+      <img src="/assets/logo/logo-dark.jpg" alt="Emma" class="admin-logo"/>
+      <span class="admin-badge">Panel local</span>
+    </div>
+    <div class="admin-header-right">
+      <span id="pending-badge" style="font-size:12px;color:rgba(255,255,255,.7)"></span>
+      <a href="/" target="_blank" style="font-size:12px;color:#fff;text-decoration:underline">Ver sitio</a>
+      <button class="btn btn-light" style="padding:8px 18px;background:#fff;color:#111" onclick="openPublish()">Publicar cambios</button>
     </div>
   </header>
 
-  <!-- ── Mobile nav ── -->
-  <nav class="mobile-nav" id="mobile-nav">
-    <p class="mobile-nav-section">Menú</p>
-    <button class="sidebar-link active" id="mnav-pedidos" onclick="switchTab('pedidos', this); closeMobileMenu()">
-      <span class="icon">📦</span> Pedidos
-      <span class="sidebar-badge" id="pending-badge-mobile">0</span>
-    </button>
-    <button class="sidebar-link" id="mnav-productos" onclick="switchTab('productos', this); closeMobileMenu()">
-      <span class="icon">👕</span> Productos
-    </button>
-    <div style="margin:8px 0;border-top:1px solid #f0f0f4;"></div>
-    <p class="mobile-nav-section">Accesos</p>
-    <a href="../index.html" class="sidebar-link" target="_blank" onclick="closeMobileMenu()">
-      <span class="icon">🏠</span> Tienda
-    </a>
-    <a href="../catalogo.html" class="sidebar-link" target="_blank" onclick="closeMobileMenu()">
-      <span class="icon">🛍️</span> Catálogo
-    </a>
-    <div style="margin:8px 0;border-top:1px solid #f0f0f4;"></div>
-    <button class="sidebar-link" style="color:#c0392b;" onclick="logout()">
-      <span class="icon">🚪</span> Cerrar sesión
-    </button>
-  </nav>
-  <div class="mobile-nav-overlay" id="mobile-nav-overlay" onclick="closeMobileMenu()"></div>
-
-  <div class="admin-layout">
-
-    <!-- ── Sidebar ── -->
-    <aside class="admin-sidebar">
-      <p class="sidebar-menu-title" style="margin-top:8px;">Menú</p>
-      <button class="sidebar-link active" onclick="switchTab('pedidos', this)">
-        <span class="icon">📦</span> Pedidos
-        <span class="sidebar-badge" id="pending-badge">0</span>
-      </button>
-      <button class="sidebar-link" onclick="switchTab('productos', this)">
-        <span class="icon">👕</span> Productos
-      </button>
-      <div style="margin:20px 0 8px;border-top:1px solid #f0f0f4;"></div>
-      <p class="sidebar-menu-title">Accesos</p>
-      <a href="../index.html" class="sidebar-link" target="_blank">
-        <span class="icon">🏠</span> Tienda
-      </a>
-      <a href="../catalogo.html" class="sidebar-link" target="_blank">
-        <span class="icon">🛍️</span> Catálogo
-      </a>
-      <div style="margin:20px 0 8px;border-top:1px solid #f0f0f4;"></div>
-      <button class="sidebar-link" style="color:#c0392b;" onclick="logout()">
-        <span class="icon">🚪</span> Cerrar sesión
-      </button>
-    </aside>
-
-    <!-- ── Main ── -->
-    <main class="admin-main">
-
-      <!-- Stats -->
-      <div class="stats-grid" id="stats-grid"></div>
-
-      <!-- Tabs -->
-      <div class="tabs">
-        <button class="tab-btn active" id="tab-btn-pedidos"   onclick="switchTab('pedidos', this)">Pedidos</button>
-        <button class="tab-btn"        id="tab-btn-productos" onclick="switchTab('productos', this)">Productos</button>
-      </div>
-
-      <!-- ── PEDIDOS ── -->
-      <div class="tab-panel active" id="panel-pedidos">
-        <div class="toolbar">
-          <input class="search-input" type="search" id="search-pedidos" placeholder="Buscar por nombre o #pedido..." oninput="filterPedidos()"/>
-          <select class="search-input" style="min-width:auto;" id="filter-estado" onchange="filterPedidos()">
-            <option value="">Todos los estados</option>
-            <option value="pendiente">Pendientes</option>
-            <option value="confirmado">Confirmados</option>
-            <option value="enviado">Enviados</option>
-            <option value="entregado">Entregados</option>
-            <option value="cancelado">Cancelados</option>
-          </select>
-        </div>
-        <div class="table-scroll">
-          <table class="data-table" id="orders-table">
-            <thead>
-              <tr>
-                <th>#</th>
-                <th>Fecha</th>
-                <th>Cliente</th>
-                <th>WhatsApp</th>
-                <th>Localidad</th>
-                <th>Total</th>
-                <th>Estado</th>
-                <th>Acciones</th>
-              </tr>
-            </thead>
-            <tbody id="orders-body"></tbody>
-          </table>
-        </div>
-      </div>
-
-      <!-- ── PRODUCTOS ── -->
-      <div class="tab-panel" id="panel-productos">
-        <div class="toolbar">
-          <input class="search-input" type="search" id="search-productos" placeholder="Buscar producto..." oninput="filterProductos()"/>
-          <button class="btn btn-dark" style="padding:10px 20px;" onclick="openProductModal()">
-            + Nuevo producto
-          </button>
-        </div>
-        <div class="table-scroll">
-          <table class="data-table" id="products-table">
-            <thead>
-              <tr>
-                <th></th>
-                <th>Nombre</th>
-                <th>Categoría</th>
-                <th>Precio</th>
-                <th>Talles</th>
-                <th>Colores</th>
-                <th>Estado</th>
-                <th>Acciones</th>
-              </tr>
-            </thead>
-            <tbody id="products-body"></tbody>
-          </table>
-        </div>
-      </div>
-
-    </main>
-  </div>
-
-  <!-- ── Modal Pedido ── -->
-  <div class="modal-overlay" id="order-modal">
-    <div class="modal">
-      <div class="modal-header">
-        <h3 id="order-modal-title">Detalle del pedido</h3>
-        <button class="modal-close" onclick="closeModal('order-modal')">×</button>
-      </div>
-      <div class="modal-body" id="order-modal-body"></div>
-      <div class="modal-footer">
-        <select class="mform-select" style="min-width:180px;" id="order-status-select">
-          <option value="pendiente">Pendiente</option>
-          <option value="confirmado">Confirmado</option>
-          <option value="enviado">Enviado</option>
-          <option value="entregado">Entregado</option>
-          <option value="cancelado">Cancelado</option>
-        </select>
-        <button class="btn btn-dark" style="padding:10px 20px;" onclick="saveOrderStatus()">Guardar estado</button>
-        <button class="action-btn action-btn-ghost" onclick="closeModal('order-modal')">Cerrar</button>
-      </div>
+  <main class="admin-main" style="max-width:1200px;margin:0 auto">
+    <p style="font-size:12px;color:#888;margin-bottom:16px">
+      Los cambios se guardan en tu carpeta local al instante. Recién se ven online cuando tocás <strong>Publicar cambios</strong> (commit + push → Vercel).
+    </p>
+    <div class="toolbar">
+      <input class="search-input" type="search" id="search-productos" placeholder="Buscar producto..." oninput="renderProductos()"/>
+      <button class="btn btn-dark" style="padding:10px 20px;" onclick="openProductModal()">+ Nuevo producto</button>
     </div>
-  </div>
+    <div class="table-scroll">
+      <table class="data-table">
+        <thead><tr><th></th><th>Nombre</th><th>Categoría</th><th>Precio</th><th>Talles</th><th>Colores</th><th>Medios</th><th>Estado</th><th>Acciones</th></tr></thead>
+        <tbody id="products-body"></tbody>
+      </table>
+    </div>
+  </main>
 
   <!-- ── Modal Producto ── -->
   <div class="modal-overlay" id="product-modal">
@@ -712,522 +584,271 @@
         <button class="modal-close" onclick="closeModal('product-modal')">×</button>
       </div>
       <div class="modal-body">
-        <form id="product-form">
+        <form id="product-form" onsubmit="return false">
           <div class="mform-row">
-            <div class="mform-group">
-              <label class="mform-label">Nombre *</label>
-              <input class="mform-input" type="text" id="p-nombre" placeholder="Ej: Jogger Oversize Gris" required/>
-            </div>
-            <div class="mform-group">
-              <label class="mform-label">Categoría *</label>
-              <select class="mform-select" id="p-categoria"></select>
-            </div>
+            <div class="mform-group"><label class="mform-label">Nombre *</label><input class="mform-input" type="text" id="p-nombre" placeholder="Ej: Jogger Oversize Gris"/></div>
+            <div class="mform-group"><label class="mform-label">Categoría *</label><select class="mform-select" id="p-categoria"></select></div>
           </div>
           <div class="mform-row">
-            <div class="mform-group">
-              <label class="mform-label">Género *</label>
-              <select class="mform-select" id="p-genero">
-                <option value="mujer">Mujer</option>
-                <option value="hombre">Hombre</option>
-                <option value="unisex">Unisex</option>
-              </select>
-            </div>
-            <div class="mform-group">
-              <label class="mform-label">Precio (ARS) *</label>
-              <input class="mform-input" type="number" id="p-precio" placeholder="28000" min="0"/>
-            </div>
+            <div class="mform-group"><label class="mform-label">Género *</label>
+              <select class="mform-select" id="p-genero"><option value="mujer">Mujer</option><option value="hombre">Hombre</option><option value="unisex">Unisex</option></select></div>
+            <div class="mform-group"><label class="mform-label">Precio (ARS) *</label><input class="mform-input" type="number" id="p-precio" min="0" placeholder="28000"/></div>
           </div>
-          <div class="mform-group">
-            <label class="mform-label">Precio anterior (dejar vacío si no hay oferta)</label>
-            <input class="mform-input" type="number" id="p-precio-antes" placeholder="35000" min="0"/>
-          </div>
-          <div class="mform-group">
-            <label class="mform-label">Descripción</label>
-            <textarea class="mform-textarea" id="p-descripcion" placeholder="Descripción del producto..."></textarea>
-          </div>
+          <div class="mform-group"><label class="mform-label">Precio anterior (vacío si no hay oferta)</label><input class="mform-input" type="number" id="p-precio-antes" min="0" placeholder="35000"/></div>
+          <div class="mform-group"><label class="mform-label">Descripción</label><textarea class="mform-textarea" id="p-descripcion"></textarea></div>
           <div class="mform-row">
-            <div class="mform-group">
-              <label class="mform-label">Talles disponibles</label>
-              <input class="mform-input" type="text" id="p-talles" placeholder="XS, S, M, L, XL"/>
-              <p class="mform-hint">Separados por coma</p>
-            </div>
-            <div class="mform-group">
-              <label class="mform-label">Colores disponibles</label>
-              <input class="mform-input" type="text" id="p-colores" placeholder="Negro, Gris, Blanco"/>
-              <p class="mform-hint">Separados por coma</p>
-            </div>
+            <div class="mform-group"><label class="mform-label">Talles</label><input class="mform-input" type="text" id="p-talles" placeholder="XS, S, M, L, XL"/><p class="mform-hint">Separados por coma</p></div>
+            <div class="mform-group"><label class="mform-label">Colores</label><input class="mform-input" type="text" id="p-colores" placeholder="Negro, Gris, Blanco"/><p class="mform-hint">Separados por coma</p></div>
           </div>
           <div class="mform-group">
-            <label class="mform-label">Imágenes *</label>
-            <div class="img-gallery-editor" id="img-gallery-editor"></div>
-            <input type="file" id="p-imagen-file" accept="image/jpeg,image/png,image/webp,image/gif" style="display:none" multiple onchange="handleImageSelect(this)"/>
-            <p class="mform-hint">La primera imagen es la principal. Las imágenes se suben al guardar.</p>
+            <label class="mform-label">Videos (.webm)</label>
+            <div class="img-gallery-editor" id="ed-video"></div>
+            <input type="file" id="in-video" accept="video/webm,.webm" multiple style="display:none" onchange="addFiles('video', this)"/>
+            <p class="mform-hint">Máx. 20 MB c/u. Se muestran primero en el detalle; el primero se reproduce en la carta. Recomendado 3:4 vertical, sin audio. Convertir: <code>ffmpeg -i in.mp4 -an -vf "scale=720:-2" -c:v libvpx-vp9 -crf 36 -b:v 0 out.webm</code></p>
           </div>
-          <div style="display:flex;flex-direction:column;gap:0;">
-            <div class="toggle-row">
-              <label for="p-nuevo">Marcar como Nuevo</label>
-              <label class="toggle">
-                <input type="checkbox" id="p-nuevo"/>
-                <span class="toggle-thumb"></span>
-              </label>
-            </div>
-            <div class="toggle-row">
-              <label for="p-sale">Marcar como Oferta</label>
-              <label class="toggle">
-                <input type="checkbox" id="p-sale"/>
-                <span class="toggle-thumb"></span>
-              </label>
-            </div>
-            <div class="toggle-row">
-              <label for="p-destacado">Mostrar en destacados</label>
-              <label class="toggle">
-                <input type="checkbox" id="p-destacado"/>
-                <span class="toggle-thumb"></span>
-              </label>
-            </div>
+          <div class="mform-group">
+            <label class="mform-label">Imágenes * (la primera es la principal y el fallback del video)</label>
+            <div class="img-gallery-editor" id="ed-image"></div>
+            <input type="file" id="in-image" accept="image/jpeg,image/png,image/webp" multiple style="display:none" onchange="addFiles('image', this)"/>
+            <p class="mform-hint">Se redimensionan a máx. 1600 px y se convierten a WebP al guardar.</p>
+          </div>
+          <div style="display:flex;flex-direction:column;">
+            <div class="toggle-row"><label for="p-nuevo">Marcar como Nuevo</label><label class="toggle"><input type="checkbox" id="p-nuevo"/><span class="toggle-thumb"></span></label></div>
+            <div class="toggle-row"><label for="p-sale">Marcar como Oferta</label><label class="toggle"><input type="checkbox" id="p-sale"/><span class="toggle-thumb"></span></label></div>
+            <div class="toggle-row"><label for="p-destacado">Mostrar en destacados</label><label class="toggle"><input type="checkbox" id="p-destacado"/><span class="toggle-thumb"></span></label></div>
           </div>
         </form>
       </div>
       <div class="modal-footer">
-        <button class="btn btn-dark" style="padding:10px 24px;" onclick="saveProduct()">Guardar producto</button>
+        <button class="btn btn-dark" id="save-btn" style="padding:10px 24px;" onclick="saveProduct()">Guardar producto</button>
         <button class="action-btn action-btn-ghost" onclick="closeModal('product-modal')">Cancelar</button>
       </div>
     </div>
   </div>
 
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
-  <script src="../js/supabase.js"></script>
-  <script src="../js/data.js"></script>
-  <script src="../js/categories.js"></script>
+  <!-- ── Modal Publicar ── -->
+  <div class="modal-overlay" id="publish-modal">
+    <div class="modal">
+      <div class="modal-header"><h3>Publicar cambios</h3><button class="modal-close" onclick="closeModal('publish-modal')">×</button></div>
+      <div class="modal-body">
+        <p class="mform-hint" id="publish-info" style="margin-bottom:10px"></p>
+        <div class="mform-group"><label class="mform-label">Mensaje del commit</label><input class="mform-input" type="text" id="commit-msg" value="Actualizar catálogo"/></div>
+        <pre id="publish-log" style="display:none;margin-top:12px;max-height:220px;overflow:auto;background:#111;color:#ddd;padding:12px;font-size:11px;white-space:pre-wrap"></pre>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-dark" id="publish-btn" style="padding:10px 24px;" onclick="publish()">Publicar (commit + push)</button>
+        <button class="action-btn action-btn-ghost" onclick="closeModal('publish-modal')">Cerrar</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="/js/categories.js"></script>
+  <script src="/js/data.js"></script>
   <script>
-    // ── Populate category select from central config ──
-    (function() {
-      const sel = document.getElementById('p-categoria');
-      CATEGORIES.forEach(c => {
-        const opt = document.createElement('option');
-        opt.value = c.slug;
-        opt.textContent = c.nombre;
-        sel.appendChild(opt);
-      });
-    })();
-
-    // ── Auth guard ─────────────────────────────────────
-    async function logout() {
-      await db.auth.signOut();
-      location.href = 'login.html';
+    const H = { 'X-Emma-Admin': '1' };
+    async function api(path, opts = {}) {
+      const r = await fetch('/api' + path, { ...opts, headers: { ...H, ...(opts.headers || {}) } });
+      const j = await r.json().catch(() => ({}));
+      if (!r.ok) { const e = new Error(j.error || r.statusText); e.data = j; throw e; }
+      return j;
     }
+    const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+    const $ = id => document.getElementById(id);
 
-    // ── State ──────────────────────────────────────────
-    let pedidosList      = [];
-    let currentOrderId   = null;
-    let editingProductId  = null;
-    let currentImageUrls  = [];    // URLs existentes (al editar)
-    let pendingImageFiles = [];    // { file, previewUrl } pendientes de subir
-    let removedImageUrls  = [];    // URLs a borrar del storage al guardar
-
-    // ── Stats ──────────────────────────────────────────
-    function renderStats() {
-      const pending  = pedidosList.filter(p => p.estado === 'pendiente').length;
-      const totalRev = pedidosList.filter(p => p.estado !== 'cancelado').reduce((s, p) => s + p.total, 0);
-      document.getElementById('stats-grid').innerHTML = `
-        <div class="stat-card">
-          <p class="stat-label">Pedidos totales</p>
-          <p class="stat-value">${pedidosList.length}</p>
-          <p class="stat-hint">Todos los tiempos</p>
-        </div>
-        <div class="stat-card">
-          <p class="stat-label">Pendientes</p>
-          <p class="stat-value" style="color:${pending ? '#c0392b' : '#2ecc71'}">${pending}</p>
-          <p class="stat-hint">Requieren atención</p>
-        </div>
-        <div class="stat-card">
-          <p class="stat-label">Productos</p>
-          <p class="stat-value">${PRODUCTOS.length}</p>
-          <p class="stat-hint">En el catálogo</p>
-        </div>
-        <div class="stat-card">
-          <p class="stat-label">Facturación</p>
-          <p class="stat-value" style="font-size:20px;">${formatPrecio(totalRev)}</p>
-          <p class="stat-hint">Pedidos confirmados</p>
-        </div>
-      `;
-      const badgeVal = pending || '';
-      const badgeShow = pending ? 'inline' : 'none';
-      document.getElementById('pending-badge').textContent = badgeVal;
-      document.getElementById('pending-badge').style.display = badgeShow;
-      document.getElementById('pending-badge-mobile').textContent = badgeVal;
-      document.getElementById('pending-badge-mobile').style.display = badgeShow;
-    }
-
-    // ── Mobile menu ────────────────────────────────────
-    function toggleMobileMenu() {
-      const nav     = document.getElementById('mobile-nav');
-      const overlay = document.getElementById('mobile-nav-overlay');
-      const btn     = document.getElementById('mobile-menu-btn');
-      const isOpen  = nav.classList.contains('open');
-      nav.classList.toggle('open');
-      overlay.classList.toggle('open');
-      btn.classList.toggle('open');
-    }
-    function closeMobileMenu() {
-      document.getElementById('mobile-nav').classList.remove('open');
-      document.getElementById('mobile-nav-overlay').classList.remove('open');
-      document.getElementById('mobile-menu-btn').classList.remove('open');
-    }
-
-    // ── Tabs ───────────────────────────────────────────
-    function switchTab(name, btn) {
-      document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
-      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-      document.querySelectorAll('.sidebar-link').forEach(b => b.classList.remove('active'));
-      document.getElementById('panel-' + name).classList.add('active');
-      const tabBtn = document.getElementById('tab-btn-' + name);
-      if (tabBtn) tabBtn.classList.add('active');
-      if (btn) btn.classList.add('active');
-      // Sync mobile nav active state
-      document.getElementById('mnav-pedidos').classList.toggle('active', name === 'pedidos');
-      document.getElementById('mnav-productos').classList.toggle('active', name === 'productos');
-    }
-
-    // ── PEDIDOS ────────────────────────────────────────
-    const estadoLabels = {
-      pendiente:  '<span class="badge badge-pending">Pendiente</span>',
-      confirmado: '<span class="badge badge-confirmed">Confirmado</span>',
-      enviado:    '<span class="badge badge-shipped">Enviado</span>',
-      entregado:  '<span class="badge badge-done">Entregado</span>',
-      cancelado:  '<span class="badge badge-cancelled">Cancelado</span>'
-    };
-
-    function renderPedidos(list) {
-      const tbody = document.getElementById('orders-body');
-      if (!list.length) {
-        tbody.innerHTML = `<tr><td colspan="8"><div class="table-empty"><div class="e-icon">📭</div><p>No hay pedidos todavía</p></div></td></tr>`;
-        return;
-      }
-      tbody.innerHTML = list.map(p => {
-        const fecha = new Date(p.created_at).toLocaleDateString('es-AR', { day:'2-digit', month:'2-digit', year:'2-digit', hour:'2-digit', minute:'2-digit' });
-        const ordId = String(p.id).padStart(6, '0');
-        return `<tr>
-          <td><strong>#${ordId}</strong></td>
-          <td style="font-size:12px;color:#888;">${fecha}</td>
-          <td><strong>${p.nombre}</strong></td>
-          <td>
-            <a href="https://wa.me/549${p.whatsapp.replace(/\D/g,'')}" target="_blank" style="color:#25d366;font-weight:600;font-size:12px;">
-              📱 ${p.whatsapp}
-            </a>
-          </td>
-          <td style="font-size:12px;">${p.localidad}${p.provincia ? ', ' + p.provincia : ''}</td>
-          <td><strong>${formatPrecio(p.total)}</strong></td>
-          <td>${estadoLabels[p.estado] || p.estado}</td>
-          <td>
-            <button class="action-btn action-btn-primary" style="font-size:11px;" onclick="openOrderModal(${p.id})">Ver</button>
-          </td>
-        </tr>`;
-      }).join('');
-    }
-
-    function filterPedidos() {
-      const q   = document.getElementById('search-pedidos').value.toLowerCase();
-      const est = document.getElementById('filter-estado').value;
-      let list  = [...pedidosList];
-      if (q)   list = list.filter(p => p.nombre.toLowerCase().includes(q) || String(p.id).includes(q));
-      if (est) list = list.filter(p => p.estado === est);
-      renderPedidos(list);
-    }
-
-    function openOrderModal(id) {
-      const p = pedidosList.find(o => o.id === id);
-      if (!p) return;
-      currentOrderId = id;
-      const ordId = String(p.id).padStart(6, '0');
-      const fecha = new Date(p.created_at).toLocaleDateString('es-AR', { weekday:'long', day:'numeric', month:'long', year:'numeric', hour:'2-digit', minute:'2-digit' });
-      const waMsg = `Hola ${p.nombre.split(' ')[0]}! 👋 Gracias por tu pedido #${ordId}. Estamos confirmando disponibilidad de stock. ¡Te avisamos a la brevedad!`;
-
-      document.getElementById('order-modal-title').textContent = `Pedido #${ordId}`;
-      document.getElementById('order-status-select').value = p.estado;
-      document.getElementById('order-modal-body').innerHTML = `
-        <div class="order-detail-header">
-          <div class="order-detail-field"><small>Fecha</small><span>${fecha}</span></div>
-          <div class="order-detail-field"><small>Estado</small><span>${estadoLabels[p.estado]}</span></div>
-          <div class="order-detail-field"><small>Cliente</small><span>${p.nombre}</span></div>
-          <div class="order-detail-field">
-            <small>WhatsApp</small>
-            <span>
-              <a href="https://wa.me/549${p.whatsapp.replace(/\D/g,'')}?text=${encodeURIComponent(waMsg)}" target="_blank" style="color:#25d366;font-weight:700;">
-                📱 ${p.whatsapp}
-              </a>
-            </span>
-          </div>
-          <div class="order-detail-field"><small>Dirección</small><span>${p.direccion}</span></div>
-          <div class="order-detail-field"><small>Localidad</small><span>${p.localidad}${p.provincia ? ', ' + p.provincia : ''}</span></div>
-          ${p.nota ? `<div class="order-detail-field" style="grid-column:1/-1"><small>Nota</small><span>${p.nota}</span></div>` : ''}
-        </div>
-
-        <p style="font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:#aaa;margin-bottom:10px;">Productos</p>
-        <div class="order-items-list">
-          ${p.items.map(item => `
-            <div class="order-item-row">
-              <img src="${item.imagen && item.imagen.startsWith('http') ? item.imagen : `../${item.imagen}`}" alt="${item.nombre}" onerror="this.style.display='none'"/>
-              <div>
-                <p style="font-weight:600;">${item.nombre}</p>
-                <p style="font-size:11px;color:#888;">${item.talle} / ${item.color} ×${item.qty}</p>
-              </div>
-              <span style="margin-left:auto;font-weight:700;">${formatPrecio(item.precio * item.qty)}</span>
-            </div>
-          `).join('')}
-          <div style="display:flex;justify-content:space-between;font-weight:700;font-size:15px;padding-top:14px;margin-top:4px;border-top:2px solid var(--black);">
-            <span>Total</span><span>${formatPrecio(p.total)}</span>
-          </div>
-        </div>
-      `;
-      document.getElementById('order-modal').classList.add('open');
-    }
-
-    async function saveOrderStatus() {
-      const estado = document.getElementById('order-status-select').value;
-      try {
-        await db_actualizarEstadoPedido(currentOrderId, estado);
-        const idx = pedidosList.findIndex(p => p.id === currentOrderId);
-        if (idx > -1) pedidosList[idx].estado = estado;
-        closeModal('order-modal');
-        renderStats();
-        filterPedidos();
-      } catch (err) {
-        alert('Error al actualizar estado: ' + err.message);
-      }
-    }
-
-    // ── PRODUCTOS ──────────────────────────────────────
     const catNames = Object.fromEntries(CATEGORIES.map(c => [c.slug, c.nombre]));
+    CATEGORIES.forEach(c => $('p-categoria').add(new Option(c.nombre, c.slug)));
 
-    function renderProductos(list) {
-      const tbody = document.getElementById('products-body');
-      if (!list.length) {
-        tbody.innerHTML = `<tr><td colspan="8"><div class="table-empty"><div class="e-icon">👕</div><p>No hay productos</p></div></td></tr>`;
-        return;
-      }
-      tbody.innerHTML = list.map(p => {
-        const imgSrc = (p.imagenes && p.imagenes[0])
-          ? (p.imagenes[0].startsWith('http') ? p.imagenes[0] : `../${p.imagenes[0]}`)
-          : '';
-        return `
+    let products = [];
+    let editingId = null;
+    // Medios del producto en edición, en orden: { url } existente | { file, preview } nuevo
+    let media = { image: [], video: [] };
+
+    /* ── Tabla ── */
+    function renderProductos() {
+      const q = $('search-productos').value.toLowerCase();
+      const list = q ? products.filter(p => p.nombre.toLowerCase().includes(q)) : products;
+      $('products-body').innerHTML = list.length ? list.map(p => `
         <tr>
-          <td>
-            <img class="product-thumb" src="${imgSrc}" alt="${p.nombre}" onerror="this.src='data:image/svg+xml,<svg xmlns=\\'http://www.w3.org/2000/svg\\' width=\\'44\\' height=\\'56\\'><rect fill=\\'%23eee\\' width=\\'44\\' height=\\'56\\'/></svg>'"/>
-          </td>
-          <td><strong>${p.nombre}</strong></td>
-          <td style="font-size:12px;color:#888;">${catNames[p.categoria] || p.categoria}</td>
-          <td>
-            <strong>${formatPrecio(p.precio)}</strong>
-            ${p.precioAntes ? `<br><span style="font-size:11px;color:#888;text-decoration:line-through;">${formatPrecio(p.precioAntes)}</span>` : ''}
-          </td>
-          <td style="font-size:12px;">${(p.talles || []).join(', ')}</td>
-          <td style="font-size:12px;">${(p.colores || []).join(', ')}</td>
-          <td>
-            ${p.nuevo    ? '<span class="badge badge-new" style="display:block;margin-bottom:3px;">Nuevo</span>' : ''}
-            ${p.sale     ? '<span class="badge badge-sale" style="display:block;margin-bottom:3px;">Oferta</span>' : ''}
-            ${p.destacado? '<span class="badge" style="background:#f0f4e8;color:#5a7a2a;display:block;">Destacado</span>' : ''}
-          </td>
-          <td>
-            <div style="display:flex;gap:6px;flex-wrap:wrap;">
-              <a href="../producto.html?id=${p.id}" target="_blank" class="action-btn action-btn-ghost" style="font-size:11px;">Ver</a>
-              <button class="action-btn action-btn-primary" style="font-size:11px;" onclick="editProduct(${p.id})">Editar</button>
-              <button class="action-btn action-btn-danger" style="font-size:11px;" onclick="deleteProduct(${p.id})">Eliminar</button>
-            </div>
-          </td>
-        </tr>
-      `;
-      }).join('');
+          <td><img class="product-thumb" src="${esc(p.imagenes[0])}" alt=""/></td>
+          <td><strong>${esc(p.nombre)}</strong></td>
+          <td style="font-size:12px;color:#888">${esc(catNames[p.categoria] || p.categoria)}</td>
+          <td><strong>${formatPrecio(p.precio)}</strong>${p.precioAntes ? `<br><span style="font-size:11px;color:#888;text-decoration:line-through">${formatPrecio(p.precioAntes)}</span>` : ''}</td>
+          <td style="font-size:12px">${esc((p.talles || []).join(', '))}</td>
+          <td style="font-size:12px">${esc((p.colores || []).join(', '))}</td>
+          <td style="font-size:12px">${p.imagenes.length} 🖼 · ${(p.videos || []).length} 🎬</td>
+          <td>${p.nuevo ? '<span class="badge badge-new" style="display:block;margin-bottom:3px">Nuevo</span>' : ''}${p.sale ? '<span class="badge badge-sale" style="display:block;margin-bottom:3px">Oferta</span>' : ''}${p.destacado ? '<span class="badge" style="background:#f0f4e8;color:#5a7a2a;display:block">Destacado</span>' : ''}</td>
+          <td><div style="display:flex;gap:6px;flex-wrap:wrap">
+            <a href="/producto.html?id=${p.id}" target="_blank" class="action-btn action-btn-ghost" style="font-size:11px">Ver</a>
+            <button class="action-btn action-btn-primary" style="font-size:11px" onclick="openProductModal(${p.id})">Editar</button>
+            <button class="action-btn action-btn-danger" style="font-size:11px" onclick="deleteProduct(${p.id})">Eliminar</button>
+          </div></td>
+        </tr>`).join('') : `<tr><td colspan="9"><div class="table-empty"><div class="e-icon">👕</div><p>No hay productos todavía</p></div></td></tr>`;
     }
 
-    function filterProductos() {
-      const q    = document.getElementById('search-productos').value.toLowerCase();
-      const list = q ? PRODUCTOS.filter(p => p.nombre.toLowerCase().includes(q)) : PRODUCTOS;
-      renderProductos(list);
-    }
-
-    function renderImageGalleryEditor() {
-      const editor = document.getElementById('img-gallery-editor');
-      editor.innerHTML = '';
-
-      currentImageUrls.forEach((url, i) => {
-        const thumb = document.createElement('div');
-        thumb.className = 'img-thumb';
-        thumb.innerHTML = `<img src="${url}" alt="Imagen ${i+1}"/>
-          <button type="button" class="img-thumb-remove" onclick="removeCurrentImage(${i})">×</button>`;
-        editor.appendChild(thumb);
+    /* ── Editor de medios ── */
+    function renderEditor(kind) {
+      const ed = $('ed-' + kind);
+      ed.innerHTML = '';
+      media[kind].forEach((m, i) => {
+        const src = m.url || m.preview;
+        const t = document.createElement('div');
+        t.className = 'img-thumb' + (m.file ? ' img-thumb-new' : '');
+        t.innerHTML = (kind === 'video'
+          ? `<video src="${esc(src)}#t=0.1" muted preload="metadata"></video>`
+          : `<img src="${esc(src)}" alt=""/>`) +
+          `<button type="button" class="img-thumb-remove" onclick="removeMedia('${kind}',${i})">×</button>` +
+          (i > 0 ? `<button type="button" title="Mover al inicio" onclick="moveFirst('${kind}',${i})" style="position:absolute;left:2px;bottom:2px;font-size:10px;padding:1px 5px;border:0;background:rgba(0,0,0,.65);color:#fff;cursor:pointer">←</button>` : '');
+        if (kind === 'video') t.querySelector('video').style.cssText = 'width:100%;height:100%;object-fit:cover';
+        ed.appendChild(t);
       });
-
-      pendingImageFiles.forEach((item, i) => {
-        const thumb = document.createElement('div');
-        thumb.className = 'img-thumb img-thumb-new';
-        thumb.innerHTML = `<img src="${item.previewUrl}" alt="Nueva imagen"/>
-          <button type="button" class="img-thumb-remove" onclick="removePendingImage(${i})">×</button>`;
-        editor.appendChild(thumb);
-      });
-
-      const addBtn = document.createElement('div');
-      addBtn.className = 'img-add-btn';
-      addBtn.title = 'Agregar imagen';
-      addBtn.innerHTML = '+';
-      addBtn.onclick = () => document.getElementById('p-imagen-file').click();
-      editor.appendChild(addBtn);
+      const add = document.createElement('div');
+      add.className = 'img-add-btn'; add.textContent = '+'; add.title = 'Agregar';
+      add.onclick = () => $('in-' + kind).click();
+      ed.appendChild(add);
     }
+    const removeMedia = (k, i) => { media[k].splice(i, 1); renderEditor(k); };
+    const moveFirst = (k, i) => { media[k].unshift(media[k].splice(i, 1)[0]); renderEditor(k); };
 
-    function removeCurrentImage(i) {
-      removedImageUrls.push(currentImageUrls[i]);
-      currentImageUrls.splice(i, 1);
-      renderImageGalleryEditor();
-    }
-
-    function removePendingImage(i) {
-      pendingImageFiles.splice(i, 1);
-      renderImageGalleryEditor();
-    }
-
-    function handleImageSelect(input) {
-      const files = Array.from(input.files);
-      files.forEach(file => {
-        const reader = new FileReader();
-        reader.onload = e => {
-          pendingImageFiles.push({ file, previewUrl: e.target.result });
-          renderImageGalleryEditor();
-        };
-        reader.readAsDataURL(file);
-      });
-      input.value = '';
-    }
-
-    function openProductModal(id) {
-      editingProductId  = id || null;
-      currentImageUrls  = [];
-      pendingImageFiles = [];
-      removedImageUrls  = [];
-      document.getElementById('p-imagen-file').value = '';
-      document.getElementById('product-modal-title').textContent = id ? 'Editar producto' : 'Nuevo producto';
-
-      if (id) {
-        const p = PRODUCTOS.find(x => x.id === id);
-        if (!p) return;
-        document.getElementById('p-nombre').value       = p.nombre;
-        document.getElementById('p-categoria').value    = p.categoria;
-        document.getElementById('p-genero').value       = p.genero;
-        document.getElementById('p-precio').value       = p.precio;
-        document.getElementById('p-precio-antes').value = p.precioAntes || '';
-        document.getElementById('p-descripcion').value  = p.descripcion || '';
-        document.getElementById('p-talles').value       = (p.talles  || []).join(', ');
-        document.getElementById('p-colores').value      = (p.colores || []).join(', ');
-        document.getElementById('p-nuevo').checked      = !!p.nuevo;
-        document.getElementById('p-sale').checked       = !!p.sale;
-        document.getElementById('p-destacado').checked  = !!p.destacado;
-        currentImageUrls = [...(p.imagenes || [])];
-      } else {
-        document.getElementById('product-form').reset();
+    function addFiles(kind, input) {
+      for (const file of input.files) {
+        if (kind === 'video' && (!/\.webm$/i.test(file.name) || file.size > 20 * 1048576)) {
+          alert(`"${file.name}": solo .webm de hasta 20 MB.`); continue;
+        }
+        media[kind].push({ file, preview: URL.createObjectURL(file) });
       }
-      renderImageGalleryEditor();
-      document.getElementById('product-modal').classList.add('open');
+      input.value = '';
+      renderEditor(kind);
     }
 
-    function editProduct(id) { openProductModal(id); }
+    // Redimensiona a máx. 1600px y convierte a WebP
+    async function toWebp(file) {
+      const bmp = await createImageBitmap(file);
+      const k = Math.min(1, 1600 / Math.max(bmp.width, bmp.height));
+      const c = document.createElement('canvas');
+      c.width = Math.round(bmp.width * k); c.height = Math.round(bmp.height * k);
+      c.getContext('2d').drawImage(bmp, 0, 0, c.width, c.height);
+      const blob = await new Promise(r => c.toBlob(r, 'image/webp', 0.85));
+      if (!blob) throw new Error('No se pudo convertir la imagen');
+      return blob;
+    }
+
+    async function upload(kind, body, name) {
+      const r = await api(`/upload?kind=${kind}&name=${encodeURIComponent(name)}`, { method: 'POST', body, headers: { 'Content-Type': 'application/octet-stream' } });
+      return r.path;
+    }
+
+    /* ── Modal producto ── */
+    function openProductModal(id) {
+      editingId = id || null;
+      media = { image: [], video: [] };
+      $('product-modal-title').textContent = id ? 'Editar producto' : 'Nuevo producto';
+      $('product-form').reset();
+      if (id) {
+        const p = products.find(x => x.id === id);
+        $('p-nombre').value = p.nombre; $('p-categoria').value = p.categoria; $('p-genero').value = p.genero;
+        $('p-precio').value = p.precio; $('p-precio-antes').value = p.precioAntes || '';
+        $('p-descripcion').value = p.descripcion || '';
+        $('p-talles').value = (p.talles || []).join(', '); $('p-colores').value = (p.colores || []).join(', ');
+        $('p-nuevo').checked = !!p.nuevo; $('p-sale').checked = !!p.sale; $('p-destacado').checked = !!p.destacado;
+        media.image = p.imagenes.map(url => ({ url }));
+        media.video = (p.videos || []).map(url => ({ url }));
+      }
+      renderEditor('image'); renderEditor('video');
+      $('product-modal').classList.add('open');
+    }
+
+    const csv = s => s.split(',').map(x => x.trim()).filter(Boolean);
 
     async function saveProduct() {
-      const nombre = document.getElementById('p-nombre').value.trim();
-      const precio = Number(document.getElementById('p-precio').value);
-      if (!nombre || !precio) { alert('Completá los campos obligatorios (nombre y precio).'); return; }
-      if (currentImageUrls.length === 0 && pendingImageFiles.length === 0) {
-        alert('Seleccioná al menos una imagen para el producto.'); return;
-      }
+      const nombre = $('p-nombre').value.trim();
+      const precio = Number($('p-precio').value);
+      if (!nombre || !precio) return alert('Completá nombre y precio.');
+      if (!media.image.length) return alert('Agregá al menos una imagen.');
 
-      const saveBtn = document.querySelector('#product-modal .btn-dark');
-      saveBtn.disabled = true;
-      saveBtn.textContent = 'Subiendo imágenes...';
-
+      const btn = $('save-btn');
+      btn.disabled = true;
       try {
-        // Borrar del storage las imágenes removidas
-        await Promise.all(removedImageUrls.map(url => storage_deleteImage(url)));
-
-        // Subir imágenes nuevas
-        const newUrls = await Promise.all(
-          pendingImageFiles.map(item => storage_uploadProductImage(item.file))
-        );
-
-        saveBtn.textContent = 'Guardando...';
-
-        const prod = {
-          nombre,
-          categoria:   document.getElementById('p-categoria').value,
-          genero:      document.getElementById('p-genero').value,
-          precio,
-          precioAntes: Number(document.getElementById('p-precio-antes').value) || null,
-          descripcion: document.getElementById('p-descripcion').value.trim(),
-          talles:      document.getElementById('p-talles').value.split(',').map(s => s.trim()).filter(Boolean),
-          colores:     document.getElementById('p-colores').value.split(',').map(s => s.trim()).filter(Boolean),
-          imagenes:    [...currentImageUrls, ...newUrls],
-          nuevo:       document.getElementById('p-nuevo').checked,
-          sale:        document.getElementById('p-sale').checked,
-          destacado:   document.getElementById('p-destacado').checked
-        };
-
-        if (editingProductId) {
-          await db_updateProduct(editingProductId, prod);
-        } else {
-          await db_insertProduct(prod);
+        const out = { image: [], video: [] };
+        for (const kind of ['image', 'video']) {
+          for (const m of media[kind]) {
+            if (m.url) { out[kind].push(m.url); continue; }
+            btn.textContent = kind === 'image' ? 'Procesando imagen...' : 'Subiendo video...';
+            if (kind === 'image') {
+              const blob = await toWebp(m.file);
+              out.image.push(await upload('image', blob, m.file.name.replace(/\.\w+$/, '') + '.webp'));
+            } else {
+              out.video.push(await upload('video', m.file, m.file.name));
+            }
+          }
         }
-        await loadProductos();
+        btn.textContent = 'Guardando...';
+        const prev = editingId && products.find(p => p.id === editingId);
+        const prod = {
+          id: editingId || Math.max(0, ...products.map(p => p.id)) + 1,
+          nombre, precio,
+          precioAntes: Number($('p-precio-antes').value) || null,
+          descripcion: $('p-descripcion').value.trim(),
+          categoria: $('p-categoria').value, genero: $('p-genero').value,
+          talles: csv($('p-talles').value), colores: csv($('p-colores').value),
+          imagenes: out.image, videos: out.video,
+          nuevo: $('p-nuevo').checked, sale: $('p-sale').checked, destacado: $('p-destacado').checked,
+          created_at: prev ? prev.created_at : new Date().toISOString(),
+        };
+        const next = editingId ? products.map(p => p.id === editingId ? prod : p) : [prod, ...products];
+        await api('/products', { method: 'PUT', body: JSON.stringify(next) });
+        products = next;
         closeModal('product-modal');
-        filterProductos();
-        renderStats();
+        renderProductos(); refreshGit();
       } catch (err) {
-        alert('Error al guardar el producto: ' + err.message);
+        alert('Error al guardar: ' + err.message);
       } finally {
-        saveBtn.disabled = false;
-        saveBtn.textContent = 'Guardar producto';
+        btn.disabled = false; btn.textContent = 'Guardar producto';
       }
     }
 
     async function deleteProduct(id) {
-      if (!confirm('¿Eliminar este producto? Esta acción no se puede deshacer.')) return;
+      if (!confirm('¿Eliminar este producto y sus archivos? (Podés recuperarlo con git antes de publicar.)')) return;
       try {
-        const prod = PRODUCTOS.find(p => p.id === id);
-        await db_deleteProduct(id);
-        if (prod?.imagenes?.length) {
-          await Promise.all(prod.imagenes.map(url => storage_deleteImage(url)));
-        }
-        await loadProductos();
-        filterProductos();
-        renderStats();
+        const next = products.filter(p => p.id !== id);
+        await api('/products', { method: 'PUT', body: JSON.stringify(next) });
+        products = next; renderProductos(); refreshGit();
+      } catch (err) { alert('Error al eliminar: ' + err.message); }
+    }
+
+    /* ── Git / publicar ── */
+    let gitInfo = null;
+    async function refreshGit() {
+      try {
+        gitInfo = await api('/git');
+        $('pending-badge').textContent = gitInfo.ok ? (gitInfo.changes.length ? `${gitInfo.changes.length} archivo(s) sin publicar` : 'Todo publicado') : 'git no disponible';
+      } catch { $('pending-badge').textContent = ''; }
+    }
+    async function openPublish() {
+      await refreshGit();
+      $('publish-log').style.display = 'none';
+      $('publish-info').textContent = gitInfo && gitInfo.ok
+        ? (gitInfo.changes.length ? `Rama ${gitInfo.branch}. Cambios: ${gitInfo.changes.join(' · ')}` : `Rama ${gitInfo.branch}. No hay cambios nuevos (igual se intenta el push por si quedó algo pendiente).`)
+        : (gitInfo ? gitInfo.error : '');
+      $('publish-modal').classList.add('open');
+    }
+    async function publish() {
+      const btn = $('publish-btn'); btn.disabled = true; btn.textContent = 'Publicando...';
+      const log = $('publish-log'); log.style.display = 'block'; log.textContent = '';
+      try {
+        const r = await api('/publish', { method: 'POST', body: JSON.stringify({ message: $('commit-msg').value }) });
+        log.textContent = r.log.join('\n\n') + '\n\n✅ Publicado. Vercel va a redeployar en 1-2 minutos.';
       } catch (err) {
-        alert('Error al eliminar: ' + err.message);
-      }
+        log.textContent = ((err.data && err.data.log) || []).join('\n\n') + `\n\n❌ ${err.message}`;
+      } finally { btn.disabled = false; btn.textContent = 'Publicar (commit + push)'; refreshGit(); }
     }
 
-    // ── Modal helpers ──────────────────────────────────
-    function closeModal(id) {
-      document.getElementById(id).classList.remove('open');
-    }
-    document.querySelectorAll('.modal-overlay').forEach(m => {
-      m.addEventListener('click', e => { if (e.target === m) m.classList.remove('open'); });
-    });
+    function closeModal(id) { $(id).classList.remove('open'); }
+    document.querySelectorAll('.modal-overlay').forEach(m => m.addEventListener('click', e => { if (e.target === m) m.classList.remove('open'); }));
 
-    // ── Init ───────────────────────────────────────────
     (async function init() {
-      const { data: { session } } = await db.auth.getSession();
-      if (!session) { location.href = 'login.html'; return; }
-      document.body.style.display = '';
-
-      document.getElementById('orders-body').innerHTML =
-        `<tr><td colspan="8" style="text-align:center;padding:40px;color:#aaa;">Cargando pedidos...</td></tr>`;
-      document.getElementById('products-body').innerHTML =
-        `<tr><td colspan="8" style="text-align:center;padding:40px;color:#aaa;">Cargando productos...</td></tr>`;
-
-      [pedidosList] = await Promise.all([
-        db_getPedidos(),
-        loadProductos()
-      ]);
-
-      renderStats();
-      filterPedidos();
-      renderProductos(PRODUCTOS);
+      try { products = await api('/products'); }
+      catch (e) { document.body.innerHTML = '<p style="padding:40px">No se pudo conectar con el servidor local. Ejecutá <code>node admin/server.js</code> y abrí <code>http://localhost:3000/admin/</code></p>'; return; }
+      renderProductos(); refreshGit();
     })();
   </script>
 </body>

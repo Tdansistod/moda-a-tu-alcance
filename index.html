@@ -9,9 +9,9 @@
   <meta property="og:type" content="website"/>
   <meta property="og:title" content="Emma — Moda a tu Alcance"/>
   <meta property="og:description" content="Ropa y accesorios para mujer y hombre. Elegí tu look y recibilo en casa."/>
-  <meta property="og:image" content="https://pztftznwvrsoipiuhwof.supabase.co/storage/v1/object/public/assets/logo/logo-light.jpg"/>
+  <meta property="og:image" content="https://moda-a-tu-alcance.vercel.app/assets/logo/logo-light.jpg"/>
   <meta name="twitter:card" content="summary_large_image"/>
-  <meta name="twitter:image" content="https://pztftznwvrsoipiuhwof.supabase.co/storage/v1/object/public/assets/logo/logo-light.jpg"/>
+  <meta name="twitter:image" content="https://moda-a-tu-alcance.vercel.app/assets/logo/logo-light.jpg"/>
   <script>(function(){var t=localStorage.getItem('emma_theme')||(window.matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light');document.documentElement.setAttribute('data-theme',t);})();</script>
   <link rel="stylesheet" href="css/styles.css" />
   <style>
@@ -118,8 +118,8 @@
 
         <!-- Logo -->
         <a href="index.html" class="logo" aria-label="Emma - Inicio">
-          <img class="logo-img-dark"  src="https://pztftznwvrsoipiuhwof.supabase.co/storage/v1/object/public/assets/logo/logo-dark.jpg"  alt="Emma"/>
-          <img class="logo-img-light" src="https://pztftznwvrsoipiuhwof.supabase.co/storage/v1/object/public/assets/logo/logo-light.jpg" alt="Emma"/>
+          <img class="logo-img-dark"  src="/assets/logo/logo-dark.jpg"  alt="Emma"/>
+          <img class="logo-img-light" src="/assets/logo/logo-light.jpg" alt="Emma"/>
         </a>
 
         <!-- Desktop Nav -->
@@ -180,7 +180,7 @@
         </div>
         <div class="home-hero-img">
           <img
-            src="https://pztftznwvrsoipiuhwof.supabase.co/storage/v1/object/public/assets/hero/hero.jpg"
+            src="/assets/hero/hero.jpg"
             alt="Look de temporada"
             loading="lazy"
             decoding="async"
@@ -225,16 +225,16 @@
 
       <div class="instagram-grid">
         <a href="https://www.instagram.com/moda.atualcance20" class="instagram-grid-item" target="_blank" rel="noopener">
-          <img src="https://pztftznwvrsoipiuhwof.supabase.co/storage/v1/object/public/assets/instagram/insta.png" alt="Instagram 1" loading="lazy"/>
+          <img src="/assets/instagram/insta.png" alt="Instagram 1" loading="lazy"/>
         </a>
         <a href="https://www.instagram.com/moda.atualcance20" class="instagram-grid-item" target="_blank" rel="noopener">
-          <img src="https://pztftznwvrsoipiuhwof.supabase.co/storage/v1/object/public/assets/instagram/insta2.png" alt="Instagram 2" loading="lazy"/>
+          <img src="/assets/instagram/insta2.png" alt="Instagram 2" loading="lazy"/>
         </a>
         <a href="https://www.instagram.com/moda.atualcance20" class="instagram-grid-item" target="_blank" rel="noopener">
-          <img src="https://pztftznwvrsoipiuhwof.supabase.co/storage/v1/object/public/assets/instagram/insta3.jpeg" alt="Instagram 3" loading="lazy"/>
+          <img src="/assets/instagram/insta3.jpeg" alt="Instagram 3" loading="lazy"/>
         </a>
         <a href="https://www.instagram.com/moda.atualcance20" class="instagram-grid-item" target="_blank" rel="noopener">
-          <img src="https://pztftznwvrsoipiuhwof.supabase.co/storage/v1/object/public/assets/instagram/insta4.png" alt="Instagram 4" loading="lazy"/>
+          <img src="/assets/instagram/insta4.png" alt="Instagram 4" loading="lazy"/>
         </a>
       </div>
 
@@ -250,7 +250,7 @@
       <div class="footer-grid">
 
         <div class="footer-brand">
-          <img src="https://pztftznwvrsoipiuhwof.supabase.co/storage/v1/object/public/assets/logo/logo-dark.jpg" alt="Emma" class="footer-logo" />
+          <img src="/assets/logo/logo-dark.jpg" alt="Emma" class="footer-logo" />
           <p>Indumentaria femenina y masculina.<br>Calidad, estilo y precio justo en cada prenda.</p>
           <div class="footer-social">
             <a href="https://www.instagram.com/moda.atualcance20" target="_blank" rel="noopener" aria-label="Instagram">
@@ -329,8 +329,8 @@
   </a>
 
   <!-- ── Scripts ───────────────────────────────────── -->
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
-  <script src="js/supabase.js"></script>
+  <script src="js/catalog.js"></script>
+  <script src="js/video-limiter.js"></script>
   <script src="js/data.js"></script>
   <script src="js/theme.js"></script>
   <script>
@@ -365,7 +365,7 @@
       return `
         <a href="producto.html?id=${p.id}" class="product-card">
           <div class="product-card-image">
-            <img src="${esc(img)}" alt="${esc(p.nombre)}" ${eager ? '' : 'loading="lazy"'} decoding="async"/>
+            ${cardMedia(p, { eager })}
             <span class="product-card-quick">Ver producto</span>
           </div>
           <p class="product-card-name">${esc(p.nombre)}</p>

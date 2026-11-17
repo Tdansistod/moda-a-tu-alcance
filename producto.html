@@ -7,9 +7,9 @@
   <link rel="icon" type="image/svg+xml" href="/favicon.svg"/>
   <meta property="og:type" content="website"/>
   <meta property="og:title" content="Emma — Moda a tu Alcance"/>
-  <meta property="og:image" content="https://pztftznwvrsoipiuhwof.supabase.co/storage/v1/object/public/assets/logo/logo-light.jpg"/>
+  <meta property="og:image" content="https://moda-a-tu-alcance.vercel.app/assets/logo/logo-light.jpg"/>
   <meta name="twitter:card" content="summary_large_image"/>
-  <meta name="twitter:image" content="https://pztftznwvrsoipiuhwof.supabase.co/storage/v1/object/public/assets/logo/logo-light.jpg"/>
+  <meta name="twitter:image" content="https://moda-a-tu-alcance.vercel.app/assets/logo/logo-light.jpg"/>
   <script>(function(){var t=localStorage.getItem('emma_theme')||(window.matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light');document.documentElement.setAttribute('data-theme',t);})();</script>
   <link rel="stylesheet" href="css/styles.css"/>
   <style>
@@ -280,8 +280,8 @@
     <div class="container">
       <div class="header-inner">
         <a href="index.html" class="logo">
-          <img class="logo-img-dark"  src="https://pztftznwvrsoipiuhwof.supabase.co/storage/v1/object/public/assets/logo/logo-dark.jpg"  alt="Emma"/>
-          <img class="logo-img-light" src="https://pztftznwvrsoipiuhwof.supabase.co/storage/v1/object/public/assets/logo/logo-light.jpg" alt="Emma"/>
+          <img class="logo-img-dark"  src="/assets/logo/logo-dark.jpg"  alt="Emma"/>
+          <img class="logo-img-light" src="/assets/logo/logo-light.jpg" alt="Emma"/>
         </a>
         <nav class="nav">
           <a href="index.html">Inicio</a>
@@ -324,8 +324,8 @@
     <svg width="26" height="26" viewBox="0 0 24 24" fill="white"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z"/></svg>
   </a>
 
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
-  <script src="js/supabase.js"></script>
+  <script src="js/catalog.js"></script>
+  <script src="js/video-limiter.js"></script>
   <script src="js/data.js"></script>
   <script src="js/theme.js"></script>
   <script>
@@ -341,10 +341,28 @@
     let selTalle = '', selColor = '', qty = 1, currentProduct = null;
 
     // ── Handlers ──────────────────────────────────────
-    function setImg(src, el) {
-      document.getElementById('main-img').src = src;
+    // ── Galería: videos primero, después imágenes ───────
+    let MEDIA = [];
+
+    function mediaMain(m) {
+      if (!m) return '';
+      if (m.type === 'video') {
+        const poster = (currentProduct.imagenes || [])[0] || '';
+        return `<video id="main-media" data-autoplay src="${m.src}" poster="${poster}" muted loop playsinline controls preload="metadata" onerror="mediaFallback()"></video>`;
+      }
+      return `<img id="main-media" src="${m.src}" alt="${currentProduct.nombre}"/>`;
+    }
+
+    function setMedia(i, el) {
+      document.getElementById('gallery-main').innerHTML = mediaMain(MEDIA[i]);
       document.querySelectorAll('.gallery-thumb').forEach(t => t.classList.remove('active'));
-      el.classList.add('active');
+      if (el) el.classList.add('active');
+    }
+
+    // Si el navegador no soporta WebM, se muestra la primera imagen
+    function mediaFallback() {
+      const i = MEDIA.findIndex(m => m.type === 'image');
+      if (i > -1) setMedia(i, document.querySelectorAll('.gallery-thumb')[i]);
     }
 
     function selectTalle(t, el) {
@@ -403,6 +421,7 @@
       const id = new URLSearchParams(location.search).get('id');
       const p  = getProductoById(id);
       currentProduct = p;
+      if (p) MEDIA = [...(p.videos || []).map(src => ({ type: 'video', src })), ...(p.imagenes || []).map(src => ({ type: 'image', src }))];
 
       if (!p) {
         app.innerHTML = `
@@ -435,14 +454,14 @@
 
               <!-- Gallery -->
               <div class="gallery">
-                <div class="gallery-main">
-                  <img id="main-img" src="${p.imagenes[0]}" alt="${p.nombre}"/>
-                </div>
-                ${p.imagenes.length > 1 ? `
+                <div class="gallery-main" id="gallery-main">${mediaMain(MEDIA[0])}</div>
+                ${MEDIA.length > 1 ? `
                 <div class="gallery-thumbs">
-                  ${p.imagenes.map((img, i) => `
-                    <div class="gallery-thumb ${i===0?'active':''}" onclick="setImg('${img}', this)">
-                      <img src="${img}" alt="Vista ${i+1}" loading="lazy"/>
+                  ${MEDIA.map((m, i) => `
+                    <div class="gallery-thumb ${i===0?'active':''}" onclick="setMedia(${i}, this)">
+                      ${m.type === 'video'
+                        ? `<video src="${m.src}#t=0.1" muted playsinline preload="metadata" tabindex="-1"></video><span class="thumb-play">▶</span>`
+                        : `<img src="${m.src}" alt="Vista ${i+1}" loading="lazy"/>`}
                     </div>
                   `).join('')}
                 </div>` : ''}
@@ -534,7 +553,7 @@
         rGrid.innerHTML = related.map(r => `
           <a href="producto.html?id=${r.id}" class="product-card">
             <div class="product-card-image">
-              <img src="${r.imagenes[0]}" alt="${r.nombre}" loading="lazy"/>
+              ${cardMedia(r)}
               <span class="product-card-quick">Ver producto</span>
             </div>
             <p class="product-card-name">${r.nombre}</p>

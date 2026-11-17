@@ -280,12 +280,12 @@
           <a href="index.html" class="logo">
             <img
               class="logo-img-dark"
-              src="https://pztftznwvrsoipiuhwof.supabase.co/storage/v1/object/public/assets/logo/logo-dark.jpg"
+              src="/assets/logo/logo-dark.jpg"
               alt="Emma"
             />
             <img
               class="logo-img-light"
-              src="https://pztftznwvrsoipiuhwof.supabase.co/storage/v1/object/public/assets/logo/logo-light.jpg"
+              src="/assets/logo/logo-light.jpg"
               alt="Emma"
             />
           </a>
@@ -495,14 +495,13 @@
                     line-height: 1.7;
                   "
                 >
-                  📱 <strong>¿Cómo sigue?</strong> Una vez que confirmes el
-                  pedido, te vamos a contactar por WhatsApp para verificar el
-                  stock, coordinar el envío y enviarte el link de pago de
-                  Mercado Pago.
+                  📱 <strong>¿Cómo sigue?</strong> En el siguiente paso nos vas a enviar el pedido por WhatsApp.
+                  Ahí verificamos el stock, coordinamos el envío y te pasamos
+                  el link de pago de Mercado Pago.
                 </p>
               </div>
 
-              <button type="submit" class="submit-btn">Enviar pedido →</button>
+              <button type="submit" class="submit-btn">Continuar →</button>
             </form>
           </div>
 
@@ -526,8 +525,6 @@
       </div>
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
-    <script src="js/supabase.js"></script>
     <script src="js/data.js"></script>
     <script src="js/theme.js"></script>
     <script>
@@ -597,10 +594,16 @@
 
           const btn = document.querySelector(".submit-btn");
           btn.disabled = true;
-          btn.textContent = "Enviando pedido...";
+          btn.textContent = "Un momento...";
 
           try {
-            const savedPedido = await db_guardarPedido(pedido);
+            // Sin base de datos: el pedido se arma acá y se envía recién al tocar el botón de WhatsApp
+            const savedPedido = {
+              ...pedido,
+              id: Math.floor(Date.now() / 1000) % 1000000,
+              estado: "pendiente",
+              created_at: new Date().toISOString(),
+            };
             sessionStorage.setItem(
               "emma_pedido_confirmado",
               JSON.stringify(savedPedido),
@@ -610,9 +613,9 @@
           } catch (err) {
             console.error(err);
             btn.disabled = false;
-            btn.textContent = "Enviar pedido →";
+            btn.textContent = "Continuar →";
             alert(
-              "Hubo un error al enviar el pedido. Por favor intentá de nuevo.",
+              "Hubo un error. Por favor intentá de nuevo.",
             );
           }
         });

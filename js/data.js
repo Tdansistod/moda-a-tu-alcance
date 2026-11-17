@@ -1,6 +1,6 @@
 /* ============================================================
-   EMMA — Utilidades de carrito y auth de admin
-   (Productos y pedidos ahora viven en Supabase → js/supabase.js)
+   EMMA — Utilidades de carrito y formato
+   (El catálogo se lee de data/products.json → js/catalog.js)
    ============================================================ */
 
 function formatPrecio(n) {
@@ -62,6 +62,3 @@ function actualizarBadge() {
   if (el) el.textContent = cantidadCarrito();
 }
 
-/* ── Admin auth (Supabase Auth) ──────────────────────────── */
-// La sesión la maneja Supabase internamente (localStorage).
-// Usar db.auth.getSession() para verificar, db.auth.signOut() para cerrar.

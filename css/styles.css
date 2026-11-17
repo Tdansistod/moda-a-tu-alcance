@@ -827,3 +827,39 @@ button { cursor: pointer; font-family: var(--font-sans); border: none; backgroun
 .theme-icon-dark  { display: none; }
 [data-theme="dark"] .theme-icon-light { display: none; }
 [data-theme="dark"] .theme-icon-dark  { display: flex; }
+
+/* ── Videos (cartas + detalle) ─────────────────────────── */
+.product-card-image video.card-video {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s ease, transform 0.4s ease;
+}
+.product-card-image video.card-video.is-playing { opacity: 1; }
+.product-card:hover .product-card-image video.card-video { transform: scale(1.04); }
+
+.gallery-main video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  background: var(--gray-100);
+}
+.gallery-thumb { position: relative; }
+.gallery-thumb video { width: 100%; height: 100%; object-fit: cover; pointer-events: none; }
+.thumb-play {
+  position: absolute;
+  right: 4px;
+  bottom: 4px;
+  font-size: 9px;
+  line-height: 1;
+  padding: 3px 4px;
+  border-radius: 3px;
+  color: #fff;
+  background: rgba(0, 0, 0, 0.6);
+  pointer-events: none;
+}

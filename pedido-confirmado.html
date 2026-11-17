@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>¡Pedido recibido! — Emma Moda a tu Alcance</title>
+  <title>Último paso —  Emma Moda a tu Alcance</title>
   <link rel="icon" type="image/svg+xml" href="/favicon.svg"/>
   <script>(function(){var t=localStorage.getItem('emma_theme')||(window.matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light');document.documentElement.setAttribute('data-theme',t);})();</script>
   <link rel="stylesheet" href="css/styles.css"/>
@@ -164,8 +164,8 @@
     <div class="container">
       <div class="header-inner">
         <a href="index.html" class="logo">
-          <img class="logo-img-dark"  src="https://pztftznwvrsoipiuhwof.supabase.co/storage/v1/object/public/assets/logo/logo-dark.jpg"  alt="Emma"/>
-          <img class="logo-img-light" src="https://pztftznwvrsoipiuhwof.supabase.co/storage/v1/object/public/assets/logo/logo-light.jpg" alt="Emma"/>
+          <img class="logo-img-dark"  src="/assets/logo/logo-dark.jpg"  alt="Emma"/>
+          <img class="logo-img-light" src="/assets/logo/logo-light.jpg" alt="Emma"/>
         </a>
         <div class="header-actions">
           <button class="theme-toggle" onclick="toggleTheme()" aria-label="Cambiar tema">
@@ -223,10 +223,10 @@
 
       card.innerHTML = `
         <div class="confirm-icon">✅</div>
-        <h1 class="confirm-title">¡Pedido recibido!</h1>
+        <h1 class="confirm-title">¡Casi listo!</h1>
         <p class="confirm-sub">
-          Gracias <strong>${data.nombre.split(' ')[0]}</strong> por tu compra.
-          Ahora necesitamos que nos contactes por WhatsApp para confirmar el stock y coordinar el pago y el envío.
+          Gracias <strong>${data.nombre.split(' ')[0]}</strong>. Tu pedido <strong>todavía no fue enviado</strong>:
+          tocá el botón de abajo para mandárnoslo por WhatsApp y así confirmar el stock y coordinar el pago y el envío.
         </p>
 
         <div class="order-number">

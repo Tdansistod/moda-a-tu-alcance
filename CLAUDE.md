@@ -9,10 +9,12 @@ Tienda de indumentaria online para mujeres y hombres. Static site (HTML/CSS/JS v
 | Capa | Tecnología |
 |------|-----------|
 | Frontend | HTML + CSS + JS vanilla (sin framework, sin build step) |
-| Base de datos | Supabase (PostgreSQL) |
-| Storage | Supabase Storage (bucket `assets`, carpeta `logo/`, imágenes de productos) |
-| Deploy | Vercel (static hosting) |
-| Autenticación admin | Supabase Auth (`db.auth.signInWithPassword`) + RLS en todas las tablas |
+| Datos | `data/products.json` (versionado en git) |
+| Medios | Archivos estáticos en `/assets` (imágenes `.webp`, videos `.webm`) |
+| Deploy | Vercel (static hosting, redeploy automático en cada push a `main`) |
+| Admin | Servidor Node local (`admin/server.js`, sin dependencias) — **no se despliega** |
+
+Ya no hay Supabase, base de datos ni backend en producción.
 
 ---
 
@@ -20,74 +22,62 @@ Tienda de indumentaria online para mujeres y hombres. Static site (HTML/CSS/JS v
 
 ```
 /
-├── index.html              # Página principal (hero, productos destacados, categorías)
-├── catalogo.html           # Catálogo con filtros (categoría, género, talle, sale)
-├── producto.html           # Detalle de producto (?id=N)
+├── index.html              # Página principal
+├── catalogo.html           # Catálogo con filtros
+├── producto.html           # Detalle (?id=N): galería con videos primero y luego imágenes
 ├── carrito.html            # Carrito (localStorage)
-├── checkout.html           # Formulario de datos de entrega + guardar pedido en Supabase
-├── pedido-confirmado.html  # Confirmación con botón "Coordinar por WhatsApp"
+├── checkout.html           # Datos de entrega → arma el pedido en el navegador
+├── pedido-confirmado.html  # Botón "Coordinar por WhatsApp" con el pedido armado
+├── data/products.json      # CATÁLOGO (lo edita el panel local)
+├── assets/
+│   ├── logo/ hero/ instagram/ category-images/   # estáticos del sitio
+│   └── products/           # medios de productos (los gestiona el panel; no editar a mano)
 ├── admin/
-│   ├── login.html          # Login admin (Supabase Auth — email + contraseña)
-│   └── dashboard.html      # CRUD de productos + visualización de pedidos
-├── css/
-│   └── styles.css          # Único archivo CSS — variables, componentes, dark mode
+│   ├── server.js           # Servidor local: preview + API + git publish
+│   └── dashboard.html      # Panel de productos (solo local)
+├── css/styles.css
 └── js/
-    ├── supabase.js         # Cliente Supabase + helpers de DB (productos, pedidos)
-    ├── data.js             # Carrito (localStorage), formatPrecio, auth admin
-    └── theme.js            # toggleTheme() — dark/light
+    ├── catalog.js          # loadProductos() (fetch del JSON), getProductos(), cardMedia()
+    ├── video-limiter.js    # Máx. 4 videos a la vez en escritorio, 2 en móvil (a la vista)
+    ├── categories.js       # Categorías (slug, nombre, imagen)
+    ├── data.js             # Carrito (localStorage) y formatPrecio
+    └── theme.js            # dark/light
 ```
 
 ---
 
-## Supabase
+## Catálogo (`data/products.json`)
 
-**Proyecto:** `pztftznwvrsoipiuhwof`
-**URL:** `https://pztftznwvrsoipiuhwof.supabase.co`
-**Anon key:** hardcodeada en `js/supabase.js` (es pública por diseño — no hay secretos aquí)
-
-### Tablas
-
-**`products`**
+Array de productos, el más nuevo primero. **No editar a mano**: usar el panel (valida y limpia archivos huérfanos).
 ```
-id          serial PK
-nombre      text
-descripcion text
-precio      numeric
-precioAntes numeric (nullable, precio tachado)
-categoria   text  — 'mujer' | 'hombre' | 'maquillaje'
-genero      text  — 'mujer' | 'hombre' | 'unisex'
-talles      text[]
-colores     text[]
-imagenes    text[]  (URLs de Supabase Storage)
-destacado   boolean
-nuevo       boolean
-sale        boolean
-created_at  timestamptz
+id          int (único, correlativo)
+nombre, descripcion
+precio, precioAntes (null si no hay oferta)
+categoria   slug de js/categories.js
+genero      'mujer' | 'hombre' | 'unisex'
+talles[], colores[]
+imagenes[]  rutas '/assets/products/xxx.webp' (la 1ra es la principal y el fallback del video)
+videos[]    rutas '/assets/products/xxx.webm' (opcional)
+destacado, nuevo, sale  booleanos
+created_at  ISO
 ```
 
-**`orders`**
+## Panel de admin (solo local)
+
 ```
-id          serial PK
-nombre      text
-whatsapp    text
-direccion   text
-localidad   text
-provincia   text
-nota        text
-items       jsonb  (array de { key, id, nombre, precio, imagen, talle, color, qty })
-total       numeric
-estado      text — 'pendiente' | 'confirmado' | 'enviado' | 'cancelado'
-created_at  timestamptz
+node admin/server.js        # → http://localhost:3000/admin/
 ```
+- Crear/editar/eliminar productos: escribe `data/products.json` y guarda los medios en `assets/products/`.
+- Imágenes: se redimensionan a 1600 px y se convierten a WebP en el navegador antes de subir.
+- Videos: solo `.webm`, máx. 20 MB, idealmente 3:4 y sin audio.
+- **Publicar cambios** = `git add` (solo `data/` y `assets/products/`) + commit + push → Vercel redeploya.
+- Seguridad: escucha solo en 127.0.0.1, valida `Host` y exige el header `X-Emma-Admin`. `/admin/*` redirige a `/` en Vercel y está en `.vercelignore`.
 
-### Storage
+## Videos
 
-- Bucket: `assets` (público)
-- Logos: `assets/logo/logo-dark.jpg` y `assets/logo/logo-light.jpg`
-- Imágenes de productos: `assets/product-images/...`
-- URLs permanentes (no expiran): `https://pztftznwvrsoipiuhwof.supabase.co/storage/v1/object/public/assets/[path]`
-
----
+- Carta: `<img>` + `<video data-autoplay muted loop playsinline preload="none">` encima, invisible hasta que arranca. Si el navegador no soporta WebM queda la imagen.
+- Detalle: los videos van primero en la galería, después las imágenes.
+- `video-limiter.js` (IntersectionObserver): cuenta solo videos con ≥50% visible; si hay más que el máximo (4 escritorio / 2 móvil ≤768px) reproduce los primeros en orden de lectura. Respeta `prefers-reduced-motion`. Los videos agregados dinámicamente se detectan solos.
 
 ## Sistema de temas (dark/light)
 
@@ -113,19 +103,8 @@ created_at  timestamptz
 
 1. Usuario agrega al carrito → `localStorage`
 2. Checkout → formulario de datos personales
-3. Submit → `db_guardarPedido()` → guarda en tabla `orders` con `estado: 'pendiente'`
-4. Redirige a `pedido-confirmado.html` con datos en `sessionStorage` (`emma_pedido_confirmado`)
-5. Confirmación muestra botón "Coordinar por WhatsApp" con mensaje prefabricado al número `5492944486963`
-
----
-
-## Admin
-
-- URL: `/admin/login.html`
-- Autenticación via Supabase Auth (`db.auth.signInWithPassword`); usuario creado en el dashboard de Supabase
-- Dashboard: CRUD de productos (crear, editar, eliminar) + listar pedidos + cambiar estado
-- Sin tema toggle (admin excluido del sistema dark/light)
-- Imágenes de productos: upload directo a Supabase Storage bucket `assets/product-images/`
+3. Submit → se arma el pedido en el navegador (id local, **no se guarda en ningún servidor**) y va a `pedido-confirmado.html` vía `sessionStorage` (`emma_pedido_confirmado`)
+4. El pedido recién existe cuando el cliente toca "Coordinar por WhatsApp" (mensaje prefabricado al `5492944486963`)
 
 ---
 
@@ -138,28 +117,20 @@ created_at  timestamptz
 
 ---
 
-## Lo que queda pendiente (backlog conocido)
-
-- [ ] Variables de entorno en Vercel (no crítico — el anon key es público y el sitio es 100% estático sin build step)
-- [ ] Posible migración a build tool (Vite) si se necesitan env vars reales o módulos ES
-
----
-
 ## Historial de cambios relevantes
 
+### Migración fuera de Supabase
+- Productos → `data/products.json`; medios → `/assets`; pedidos → solo WhatsApp; admin → local con git push.
+- Se eliminó `js/supabase.js`, `admin/login.html` y el workflow `keep-supabase-alive`.
+- `og:image` usa URL absoluta (`https://moda-a-tu-alcance.vercel.app/assets/logo/logo-light.jpg`); si cambia el dominio, actualizarla en index/catálogo/producto.
+- Videos `.webm` en cartas y detalle con límite de reproducción simultánea.
+
 ### Dark mode — negro puro
-- `--white` en dark mode cambiado a `#000000` (antes `#0f0f0f`) para que el fondo del header coincida con el fondo del logo-dark
-- Footer y announcement bar también usan `#000000`
-- Hero gradient oscuro termina en `#000000`
-- Los grays intermedios (`--gray-50`, `--gray-100`, `--gray-300`) se ajustaron para mantener contraste
+- `--white` en dark mode cambiado a `#000000`; footer, announcement bar y hero gradient también.
+- Los grays intermedios se ajustaron para mantener contraste.
 
 ### Favicon
-- Archivo: `/favicon.svg`
-- Diseño: anteojos de sol minimalistas, fondo negro `#111` con trazo crema `#f0ede8`
-- Agregado en todas las páginas públicas (index, catálogo, producto, carrito, checkout, pedido-confirmado)
-- Admin excluido (sin favicon intencional)
+- `/favicon.svg` (anteojos de sol minimalistas) en todas las páginas públicas.
 
-### Open Graph / Share image
-- `og:image` y `twitter:image` apuntan a `logo-light.jpg` en Supabase Storage
-- OG tags completos en: `index.html`, `catalogo.html`, `producto.html`
-- Carrito, checkout y pedido-confirmado solo tienen favicon (no se comparten en redes)
+### Open Graph
+- `og:image` / `twitter:image` en `index.html`, `catalogo.html`, `producto.html`.
